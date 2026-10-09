@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🚇 捷運高運量 升遷考精準題庫系統</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --star: #f59e0b;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            padding-bottom: 120px;
+            overflow-x: hidden;
+        }
+        /* 卡片邊線與過渡 */
+        .q-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-left: 6px solid #cbd5e1;
+            position: relative;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        @media (min-width: 640px) {
+            .q-card { padding: 20px; margin-bottom: 18px; }
+        }
+        .q-card.yun { border-left-color: #0284c7; }
+        .q-card.che { border-left-color: #7c3aed; }
+        .q-card.pending { border-left-color: #f59e0b; }
+        .q-card.highlight {
+            background-color: #fef3c7;
+            animation: flash 1.6s ease-in-out;
+        }
+        /* 選項按鈕樣式 */
+        .opt-btn {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            padding: 12px 14px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            color: #334155;
+            position: relative;
+            line-height: 1.5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .opt-btn:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+        .opt-btn.selected {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+        .opt-btn.correct {
+            background: #dcfce7 !important;
+            border-color: #86efac !important;
+            color: #14532d !important;
+            font-weight: bold;
+        }
+        .opt-btn.wrong {
+            background: #fee2e2 !important;
+            border-color: #fca5a5 !important;
+            color: #7f1d1d !important;
+        }
+        .star-btn {
+            font-size: 26px;
+            cursor: pointer;
+            color: #cbd5e1;
+            transition: all 0.2s;
+            line-height: 1;
+            user-select: none;
+        }
+        .star-btn.active {
+            color: var(--star);
+            transform: scale(1.15);
+        }
+        /* 動畫 */
+        @keyframes flash {
+            0% { background-color: #fef08a; transform: scale(1.01); }
+            50% { background-color: #fef9c3; }
+            100% { background-color: #ffffff; transform: scale(1); }
+        }
+        /* FAB 回頂端 */
+        .fab {
+            position: fixed;
+            bottom: 85px;
+            right: 16px;
+            width: 46px;
+            height: 46px;
+            background: rgba(15, 23, 42, 0.75);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            cursor: pointer;
+            z-index: 40;
+            backdrop-filter: blur(4px);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .fab:hover {
+            background: rgba(15, 23, 42, 0.95);
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body class="p-2.5 sm:p-5">
+
+<!-- 1. Google 登入視窗 (未登入時顯示) -->
+<div id="loginScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-8 shadow-2xl text-center border border-slate-100">
+        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
+            🚇
+        </div>
+        <h2 class="text-xl font-bold text-slate-800 mb-1">捷運升遷考精準題庫</h2>
+        <p class="text-xs text-slate-500 mb-6 leading-relaxed">內部讀書會專屬系統<br>請使用 Google 帳號登入申請或使用</p>
+        
+        <button onclick="loginWithGoogle()" class="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm rounded-xl border border-slate-300 shadow-sm flex items-center justify-center gap-3 transition transform active:scale-98">
+            <svg class="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>使用 Google 帳號登入</span>
+        </button>
+
+        <div id="loginErrorMsg" class="text-xs text-rose-500 font-semibold mt-4 min-h-[18px]"></div>
+    </div>
+</div>
+
+<!-- 2. 等候審核提示視窗 (已登入但尚未被管理員核准時顯示) -->
+<div id="pendingScreen" class="fixed inset-0 bg-slate-900/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-8 shadow-2xl text-center border border-slate-100">
+        <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-amber-200 shadow-inner">
+            ⏳
+        </div>
+        <h2 class="text-lg font-bold text-slate-800 mb-1">已送出使用申請</h2>
+        <div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200 my-4 text-left leading-relaxed">
+            <div><b>申請帳號：</b><span id="pendingUserEmail" class="font-mono text-slate-700"></span></div>
+            <div><b>使用者：</b><span id="pendingUserName" class="text-slate-700"></span></div>
+        </div>
+        <p class="text-xs text-slate-600 mb-6 leading-relaxed">
+            系統已將您的申請通知管理員！<br>請聯絡讀書會主辦人於線上點選「核准」，核准後點擊下方按鈕即可進入。
+        </p>
+
+        <div class="space-y-2">
+            <button onclick="checkApprovalStatus()" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-sm transition">
+                🔄 檢查審核狀態
+            </button>
+            <button onclick="confirmLogout()" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium text-xs rounded-xl transition">
+                登出更換其他帳號
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 3. 管理員專屬：成員權限審核視窗 -->
+<div id="modalAdmin" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col">
+        <div class="flex justify-between items-center border-b pb-3 mb-3">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <span>👑</span> 成員授權管理面板
+            </h3>
+            <button class="text-slate-400 hover:text-slate-600 text-xl font-bold" onclick="closeAdminModal()">✕</button>
+        </div>
+
+        <div class="overflow-y-auto flex-1 pr-1 space-y-4">
+            <!-- 待審核區塊 -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        待審核申請清單 (<span id="pendingCountBadge">0</span>)
+                    </span>
+                </div>
+                <div id="adminPendingList" class="space-y-2 text-xs">
+                    <div class="text-slate-400 text-center py-4 bg-slate-50 rounded-xl">目前沒有待審核的成員申請</div>
+                </div>
+            </div>
+
+            <!-- 手動快速新增區塊 -->
+            <div class="pt-3 border-t">
+                <span class="block text-xs font-bold text-slate-700 mb-1.5">➕ 手動直接新增成員信箱：</span>
+                <div class="flex gap-2">
+                    <input type="email" id="adminNewEmailInput" placeholder="輸入同學 Gmail (如: colleague@gmail.com)" class="flex-1 px-3 py-1.5 border border-slate-300 rounded-lg text-xs outline-none focus:border-blue-500">
+                    <button onclick="adminAddEmailDirectly()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition shrink-0">
+                        新增
+                    </button>
+                </div>
+            </div>
+
+            <!-- 已核准成員名單 -->
+            <div class="pt-3 border-t">
+                <span class="block text-xs font-bold text-slate-700 mb-2">✔️ 已開通名單 (<span id="approvedCountBadge">0</span>)</span>
+                <div id="adminApprovedList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto">
+                    <div class="text-slate-400 text-center py-3 bg-slate-50 rounded-xl">尚無開通名單</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-3 mt-3 border-t">
+            <button class="px-4 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition" onclick="closeAdminModal()">關閉視窗</button>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-4xl mx-auto">
+    <!-- 搜尋與導航區塊 -->
+    <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm mb-4 border border-slate-200">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+            <!-- 精準題號跳轉 -->
+            <div class="flex items-center gap-1.5 sm:gap-2 w-full">
+                <span class="text-xs font-bold text-slate-500 whitespace-nowrap shrink-0">題號</span>
+                <select id="searchCategory" class="px-2 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm bg-white outline-none shrink-0">
+                    <option value="運轉">運轉</option>
+                    <option value="車務">車務</option>
+                </select>
+                <input type="number" id="searchId" class="flex-1 min-w-0 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm outline-none" placeholder="輸入題號 (如 12)">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition shrink-0" onclick="searchByNumber()">跳轉</button>
+            </div>
+            <!-- 關鍵字搜尋 -->
+            <div class="flex items-center gap-1.5 sm:gap-2 w-full">
+                <span class="text-xs font-bold text-slate-500 whitespace-nowrap shrink-0">關鍵字</span>
+                <input type="text" id="searchKeyword" class="flex-1 min-w-0 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm outline-none" placeholder="搜尋內容 (如: 毒化物)">
+                <button class="bg-slate-600 hover:bg-slate-700 text-white w-8 h-8 rounded-lg text-xs font-bold transition flex items-center justify-center shrink-0" onclick="navMatch(-1)">＜</button>
+                <button class="bg-slate-600 hover:bg-slate-700 text-white w-8 h-8 rounded-lg text-xs font-bold transition flex items-center justify-center shrink-0" onclick="navMatch(1)">＞</button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition shrink-0" onclick="searchByKeyword()">搜尋</button>
+            </div>
+        </div>
+        <div id="searchStatus" class="text-xs text-rose-500 font-semibold mt-1.5 text-right min-h-[16px]"></div>
+    </div>
+
+    <!-- 頂部即時統計與進度卡片 -->
+    <div class="bg-white p-3.5 sm:p-5 rounded-2xl shadow-sm mb-4 border border-slate-200">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+            <h1 class="text-base sm:text-xl font-bold text-slate-800 flex items-center gap-2">
+                <span>🚇</span> 115年捷運高運量 升遷考題庫
+            </h1>
+            <!-- 使用者身分、管理員按鈕與連線狀態指示 -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- 管理員審核按鈕 (僅限管理員顯示) -->
+                <button id="adminTriggerBtn" class="hidden items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm transition" onclick="openAdminModal()">
+                    <span>👑</span>
+                    <span>成員審核</span>
+                    <span id="adminPendingBadge" class="hidden px-1.5 py-0.2 bg-rose-600 text-[10px] text-white rounded-full font-mono">0</span>
+                </button>
+
+                <span id="cloudStatus" class="text-xs bg-amber-100 text-amber-800 font-semibold px-2.5 py-1 rounded-full border border-amber-200 flex items-center gap-1.5 transition-colors">
+                    <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    <span id="cloudStatusText">檢查登入狀態...</span>
+                </span>
+                
+                <!-- 登入使用者標籤 (點擊可登出) -->
+                <div id="userProfileChip" class="hidden items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs px-2.5 py-1 rounded-full cursor-pointer transition" onclick="confirmLogout()" title="點擊登出此 Google 帳號">
+                    <span id="userDisplayName" class="font-bold"></span>
+                    <span class="text-slate-400">|</span>
+                    <span class="text-rose-500 font-semibold">登出</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 數據統計網格 -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3 text-center">
+            <div class="bg-slate-50 p-2 sm:p-2.5 rounded-xl border border-slate-100">
+                <div class="text-[11px] sm:text-xs text-slate-400 font-medium">總題數</div>
+                <div class="text-base sm:text-lg font-bold text-slate-700" id="statTotal">0</div>
+            </div>
+            <div class="bg-blue-50 p-2 sm:p-2.5 rounded-xl border border-blue-100">
+                <div class="text-[11px] sm:text-xs text-blue-500 font-medium">已完成</div>
+                <div class="text-base sm:text-lg font-bold text-blue-600" id="statAnswered">0</div>
+            </div>
+            <div class="bg-emerald-50 p-2 sm:p-2.5 rounded-xl border border-emerald-100">
+                <div class="text-[11px] sm:text-xs text-emerald-500 font-medium">正確率</div>
+                <div class="text-base sm:text-lg font-bold text-emerald-600" id="statAccuracy">0%</div>
+            </div>
+            <div class="bg-amber-50 p-2 sm:p-2.5 rounded-xl border border-amber-100">
+                <div class="text-[11px] sm:text-xs text-amber-500 font-medium">收藏題目</div>
+                <div class="text-base sm:text-lg font-bold text-amber-600" id="statWrong">0</div>
+            </div>
+            <div class="bg-rose-50 p-2 sm:p-2.5 rounded-xl border border-rose-100 col-span-2 sm:col-span-1">
+                <div class="text-[11px] sm:text-xs text-rose-500 font-medium">待查證題</div>
+                <div class="text-base sm:text-lg font-bold text-rose-600" id="statPending">0</div>
+            </div>
+        </div>
+
+        <!-- 進度條 -->
+        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <!-- 控制模式按鈕列 -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+        <button id="btnModeAll" class="px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition" onclick="setMode('all')">
+            📖 全部題目
+        </button>
+        <button id="btnModeWrong" class="px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition" onclick="setMode('wrong')">
+            ⭐ 收藏題庫
+        </button>
+        <button id="btnModePending" class="px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition" onclick="setMode('pending')">
+            ❓ 待確認正解
+        </button>
+        <button id="btnModeRandom" class="px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition" onclick="setMode('random')">
+            🎲 隨機 50 題
+        </button>
+    </div>
+
+    <!-- 本機進度管理小工具列 -->
+    <div class="flex justify-end gap-2 mb-4">
+        <button class="text-xs bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl font-medium transition shadow-xs" onclick="resetCurrentPage()">
+            🔄 重置本頁作答
+        </button>
+        <button class="text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 rounded-xl font-medium transition shadow-xs" onclick="clearAllData()">
+            🗑️ 清空個人紀錄
+        </button>
+    </div>
+
+    <!-- 題目列表區容器 -->
+    <div id="question-list"></div>
+
+    <!-- 分頁導航列 -->
+    <div class="flex justify-center items-center gap-4 my-6 bg-white py-2 px-5 rounded-full shadow-md border border-slate-200 sticky bottom-5 z-30 max-w-sm mx-auto" id="paginationArea" style="display:none;">
+        <button class="bg-blue-600 text-white px-4 py-1.5 rounded-full font-bold text-sm disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-blue-700 transition" id="btnPrev" onclick="changePage(-1)">◀ 上一頁</button>
+        <span class="text-sm font-semibold text-slate-600" id="pageInfo">1 / 1</span>
+        <button class="bg-blue-600 text-white px-4 py-1.5 rounded-full font-bold text-sm disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-blue-700 transition" id="btnNext" onclick="changePage(1)">下一頁 ▶</button>
+    </div>
+</div>
+
+<!-- 浮動回頂端按鈕 -->
+<div class="fab" onclick="window.scrollTo({top:0, behavior:'smooth'})" title="回頂端">⬆</div>
+
+<!-- 自訂通用確認彈窗 -->
+<div id="modalConfirm" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100">
+        <h3 id="modalConfirmTitle" class="text-base font-bold text-slate-800 mb-2">確認操作</h3>
+        <p id="modalConfirmMessage" class="text-sm text-slate-600 mb-5 leading-relaxed whitespace-pre-line"></p>
+        <div class="flex justify-end gap-2.5">
+            <button id="modalConfirmCancel" class="px-3.5 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">取消</button>
+            <button id="modalConfirmOk" class="px-4 py-1.5 text-sm font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition">確定</button>
+        </div>
+    </div>
+</div>
+
+<!-- 自訂通用訊息彈窗 -->
+<div id="modalAlert" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100 text-center">
+        <div id="modalAlertIcon" class="text-3xl mb-2">💡</div>
+        <h3 id="modalAlertTitle" class="text-base font-bold text-slate-800 mb-2">提示</h3>
+        <p id="modalAlertMessage" class="text-sm text-slate-600 mb-4 leading-relaxed whitespace-pre-line"></p>
+        
+        <!-- 待查證題目可勾選不再顯示彈窗 -->
+        <div id="modalAlertCheckboxContainer" class="hidden text-left mb-4 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center gap-2 cursor-pointer" onclick="toggleAlertCheckbox()">
+            <input type="checkbox" id="modalAlertCheckbox" class="w-4 h-4 text-blue-600 rounded pointer-events-none">
+            <label class="cursor-pointer select-none">我知道了，不再彈窗提示（之後點擊直接展開解析）</label>
+        </div>
+
+        <button id="modalAlertOk" class="w-full py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition" onclick="closeAlertModal()">好的</button>
+    </div>
+</div>
+
+<!-- 編輯正解與解析彈窗 -->
+<div id="modalEditor" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b pb-3 mb-3">
+            <h3 class="text-base font-bold text-slate-800">✏️ 編輯自訂正解與筆記解析</h3>
+            <button class="text-slate-400 hover:text-slate-600 text-xl font-bold" onclick="closeEditorModal()">✕</button>
+        </div>
+        <div id="editorQuestionInfo" class="text-xs text-slate-500 mb-2 font-mono"></div>
+        <div id="editorQuestionText" class="text-sm font-medium text-slate-700 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200"></div>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">自訂/修正正確答案：</label>
+                <input type="text" id="editorAnswerInput" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500" placeholder="例如: O、X、2 或複選填寫 1, 3">
+                <span class="text-xs text-slate-400 mt-1 block">是非題填 O 或 X；單選填選項號碼(如 2)；複選請以逗號隔開(如 1, 3)。</span>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">自訂答案解析 / 法規口訣：</label>
+                <textarea id="editorNoteInput" rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-blue-500" placeholder="輸入個人筆記、工作說明書章節或記憶口訣..."></textarea>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-5 pt-3 border-t">
+            <button class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition" onclick="closeEditorModal()">取消</button>
+            <button class="px-5 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-sm" onclick="saveCustomDetails()">儲存更新</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// ==========================================
+// 👑 最高管理員 (Admin) 信箱設定區
+// 請填入你自己的 Google Gmail，你將擁有線上審核核准與踢除成員的最高權限
+// ==========================================
+const ADMIN_EMAILS = [
+    // "your.email@gmail.com"  // 👈 在此處填入你的 Gmail！
+];
+
+// Firebase 設定
+const firebaseConfig = {
+  apiKey: "AIzaSyCM8oiRNCBR5Oy9qRSBP8a7NdElraowth8",
+  authDomain: "trtctest.firebaseapp.com",
+  projectId: "trtctest",
+  storageBucket: "trtctest.firebasestorage.app",
+  messagingSenderId: "857455679368",
+  appId: "1:857455679368:web:73316027c01a7bc8d34c3d"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'trtctest';
+
+// ==========================================
+// 題庫資料區 (後續拿到題目後，整批貼在方括號 [] 內)
+// ==========================================
+const rawDb = [
+    { i: 1, c: "運轉", t: "是非", q: "車站遭受毒化物侵襲，受影響車站採取疏散作業，若月台上有停靠列車應儘速駛離，於地下車站毒化物可能經由隧道擴散到相鄰車站，故其鄰站應同步進行疏散作業。", a: "O", n: "法規標準處理原則。" },
+    { i: 2, c: "運轉", t: "是非", q: "半高式月台門車站主控制面盤（MCP）具有開關單一自動滑門之按鈕，而就地控制面盤（LCP）則無此功能。", a: "", n: "" },
+    { i: 40, c: "運轉", t: "選擇", q: "人員下軌道作業時應確實穿著反光背心、安全鞋等防護具，且人員及機具應隨時與第3軌保持多少公分以上距離?", a: "3", o: ["40公分", "50公分", "60公分", "70公分"], n: "安全防護距離應隨時保持60公分以上。" },
+    { i: 61, c: "運轉", t: "選擇", q: "下列對通訊系統之敘述何者為非？(複選題示範)", a: "2, 4", o: ["發生營運異常時，行控中心應利用旅客資訊顯示器顯示相關訊息", "員工對子母鐘之時間有疑問時，應向通訊維修人員確認", "使用通訊設備傳送訊息時應以中文為原則", "現行高運量捷運系統之無線電系統為類比式"], n: "選項(2)應向行控中心確認；選項(4)現行高運量捷運無線電為數位式。" },
+    { i: 70, c: "車務", t: "選擇", q: "215次車以CM開至善導寺停妥後，欲離站時發生零速繼電器（ZVR）異常，EB-B燈亮，列車無法移動。下列何者是屬於第二項條件？", a: "", o: ["主蓄風缸壓力充足", "先啟動EB-LOOP BYPASS", "重置時Dead-Man要啟動操縱桿成90度", "電力煞車先隔離"], n: "" }
+];
+
+// 系統核心狀態變數
+let dbList = [];
+let currentList = [];
+let wrongList = [];
+let progressMap = {};
+let customAnswers = {};
+let customNotes = {};
+let noteMeta = {};
+let currentPage = 1;
+let hidePendingAlert = false;
+
+// 授權名單狀態 (儲存於 Firebase: collab_exam/auth_whitelist)
+let authWhitelistData = {
+    approved: [],
+    pending: {}
+};
+
+let currentMode = 'all'; // 'all' | 'wrong' | 'pending' | 'random'
+const ITEMS_PER_PAGE = 50;
+
+const multiSelectState = {};
+
+let searchMatches = [];
+let currentSearchMatchIndex = 0;
+let currentEditingUid = null;
+let alertCallback = null;
+
+// Firebase 使用者與文檔參考
+let currentUser = null;
+let isUserAdmin = false;
+let publicCollabDocRef = null;
+let authDocRef = null;
+let userPrivateDocRef = null;
+
+function updateCloudStatus(status, text) {
+    const el = document.getElementById('cloudStatus');
+    const txt = document.getElementById('cloudStatusText');
+    if (!el || !txt) return;
+
+    if (status === 'online') {
+        el.className = "text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1.5 transition-colors";
+        el.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span><span>' + text + '</span>';
+    } else if (status === 'syncing') {
+        el.className = "text-xs bg-blue-100 text-blue-800 font-semibold px-2.5 py-1 rounded-full border border-blue-200 flex items-center gap-1.5 transition-colors";
+        el.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-spin"></span><span>' + text + '</span>';
+    } else {
+        el.className = "text-xs bg-rose-100 text-rose-800 font-semibold px-2.5 py-1 rounded-full border border-rose-200 flex items-center gap-1.5 transition-colors";
+        el.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-rose-500"></span><span>' + text + '</span>';
+    }
+}
+
+// 監聽 Google 登入狀態變化
+onAuthStateChanged(auth, async (user) => {
+    const loginScreen = document.getElementById('loginScreen');
+    const pendingScreen = document.getElementById('pendingScreen');
+    const errorMsg = document.getElementById('loginErrorMsg');
+    const profileChip = document.getElementById('userProfileChip');
+    const displayNameEl = document.getElementById('userDisplayName');
+    const adminTriggerBtn = document.getElementById('adminTriggerBtn');
+
+    if (user) {
+        currentUser = user;
+        const userEmail = (user.email || "").toLowerCase();
+        
+        loginScreen.classList.add('hidden');
+        errorMsg.innerText = "";
+
+        // 綁定路徑
+        authDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'collab_exam', 'auth_whitelist');
+        publicCollabDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'collab_exam', 'master');
+        userPrivateDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'user_data', 'progress');
+
+        // 判斷是否為管理員
+        isUserAdmin = ADMIN_EMAILS.length === 0 || ADMIN_EMAILS.map(e => e.toLowerCase()).includes(userEmail);
+
+        // 即時監聽授權名單
+        onSnapshot(authDocRef, async (snap) => {
+            if (snap.exists()) {
+                authWhitelistData = snap.data();
+            } else {
+                authWhitelistData = { approved: [], pending: {} };
+                // 初始化名單文件
+                try {
+                    await setDoc(authDocRef, authWhitelistData, { merge: true });
+                } catch(e) {}
+            }
+
+            const approvedList = (authWhitelistData.approved || []).map(e => e.toLowerCase());
+            const isApproved = isUserAdmin || approvedList.includes(userEmail);
+
+            if (isApproved) {
+                // 已核准放行
+                pendingScreen.classList.add('hidden');
+                displayNameEl.innerText = `👤 ${user.displayName || user.email.split('@')[0]}`;
+                profileChip.classList.remove('hidden');
+
+                if (isUserAdmin) {
+                    adminTriggerBtn.classList.remove('hidden');
+                    adminTriggerBtn.classList.add('flex');
+                    updateAdminBadge();
+                } else {
+                    adminTriggerBtn.classList.add('hidden');
+                }
+
+                initExamSystem();
+            } else {
+                // 尚未核准：送出審核請求並顯示 pendingScreen
+                profileChip.classList.add('hidden');
+                adminTriggerBtn.classList.add('hidden');
+                document.getElementById('pendingUserEmail').innerText = user.email;
+                document.getElementById('pendingUserName').innerText = user.displayName || "同學";
+                pendingScreen.classList.remove('hidden');
+
+                // 自動將自己登記至待審核清單中
+                if (!authWhitelistData.pending || !authWhitelistData.pending[user.uid]) {
+                    const now = new Date();
+                    const timeStr = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                    try {
+                        const newPending = { ...(authWhitelistData.pending || {}) };
+                        newPending[user.uid] = {
+                            email: user.email,
+                            name: user.displayName || "未知姓名",
+                            photo: user.photoURL || "",
+                            requestedAt: timeStr
+                        };
+                        await setDoc(authDocRef, { pending: newPending }, { merge: true });
+                    } catch(e) {
+                        console.error("登記審核失敗:", e);
+                    }
+                }
+            }
+        });
+
+    } else {
+        currentUser = null;
+        isUserAdmin = false;
+        loginScreen.classList.remove('hidden');
+        pendingScreen.classList.add('hidden');
+        profileChip.classList.add('hidden');
+        adminTriggerBtn.classList.add('hidden');
+        updateCloudStatus('offline', '尚未登入');
+    }
+});
+
+let isSystemInitialized = false;
+async function initExamSystem() {
+    if (isSystemInitialized) return;
+    isSystemInitialized = true;
+
+    // 載入個人作答進度
+    try {
+        const privateSnap = await getDoc(userPrivateDocRef);
+        if (privateSnap.exists()) {
+            const privData = privateSnap.data();
+            wrongList = privData.wrongList || [];
+            progressMap = privData.progressMap || {};
+            currentPage = privData.currentPage || 1;
+            hidePendingAlert = privData.hidePendingAlert || false;
+        }
+    } catch (e) {
+        console.warn("載入個人進度失敗:", e);
+    }
+
+    // 即時監聽公共題庫正解與筆記
+    onSnapshot(publicCollabDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            customAnswers = data.customAnswers || {};
+            customNotes = data.customNotes || {};
+            noteMeta = data.noteMeta || {};
+        }
+        processData();
+        updateStats(false);
+        renderPage(false);
+        updateCloudStatus('online', '雲端同步即時連線');
+    }, (err) => {
+        console.error("Firestore 監聽中斷:", err);
+        updateCloudStatus('offline', '雲端連線異常');
+    });
+}
+
+async function loginWithGoogle() {
+    const errorMsg = document.getElementById('loginErrorMsg');
+    errorMsg.innerText = "正在開啟 Google 登入視窗...";
+    try {
+        await signInWithPopup(auth, provider);
+    } catch (err) {
+        console.error("Google 登入失敗:", err);
+        errorMsg.innerText = "登入已取消或失敗，請再試一次。";
+    }
+}
+
+function checkApprovalStatus() {
+    if (authDocRef) {
+        getDoc(authDocRef).then((snap) => {
+            if (snap.exists()) {
+                authWhitelistData = snap.data();
+                const userEmail = (currentUser?.email || "").toLowerCase();
+                const approvedList = (authWhitelistData.approved || []).map(e => e.toLowerCase());
+                if (approvedList.includes(userEmail)) {
+                    document.getElementById('pendingScreen').classList.add('hidden');
+                    initExamSystem();
+                } else {
+                    showCustomAlert("審核中", "管理員尚未開通您的帳號，請稍後再試或通知主辦人！");
+                }
+            }
+        });
+    }
+}
+
+function confirmLogout() {
+    showCustomConfirm("確定登出？", "登出後將返回登入畫面，作答進度已安全儲存於雲端。", async () => {
+        await signOut(auth);
+    });
+}
+
+// ==========================================
+// 👑 管理員審核與名單控制模組
+// ==========================================
+function updateAdminBadge() {
+    const pendingList = Object.entries(authWhitelistData.pending || {});
+    const count = pendingList.length;
+    const badge = document.getElementById('adminPendingBadge');
+    if (count > 0) {
+        badge.innerText = count;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+function openAdminModal() {
+    renderAdminLists();
+    document.getElementById('modalAdmin').classList.remove('hidden');
+}
+
+function closeAdminModal() {
+    document.getElementById('modalAdmin').classList.add('hidden');
+}
+
+function renderAdminLists() {
+    const pendingEntries = Object.entries(authWhitelistData.pending || {});
+    const approvedList = authWhitelistData.approved || [];
+
+    document.getElementById('pendingCountBadge').innerText = pendingEntries.length;
+    document.getElementById('approvedCountBadge').innerText = approvedList.length;
+
+    // 渲染待審核清單
+    const pendingContainer = document.getElementById('adminPendingList');
+    if (pendingEntries.length === 0) {
+        pendingContainer.innerHTML = `<div class="text-slate-400 text-center py-4 bg-slate-50 rounded-xl">目前沒有待審核的成員申請</div>`;
+    } else {
+        let html = '';
+        pendingEntries.forEach(([uid, info]) => {
+            html += `
+                <div class="flex items-center justify-between p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl">
+                    <div class="min-w-0 pr-2">
+                        <div class="font-bold text-slate-800 truncate">${info.name}</div>
+                        <div class="text-[11px] text-slate-500 font-mono truncate">${info.email}</div>
+                        <div class="text-[10px] text-amber-700">申請於: ${info.requestedAt || "剛才"}</div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="adminApproveUser('${uid}', '${info.email}')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition shadow-xs">
+                            ✔️ 核准
+                        </button>
+                        <button onclick="adminRejectUser('${uid}')" class="px-2 py-1 bg-slate-200 hover:bg-rose-100 hover:text-rose-700 text-slate-600 font-semibold rounded-lg transition">
+                            ✕ 拒絕
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        pendingContainer.innerHTML = html;
+    }
+
+    // 渲染已開通名單
+    const approvedContainer = document.getElementById('adminApprovedList');
+    if (approvedList.length === 0) {
+        approvedContainer.innerHTML = `<div class="text-slate-400 text-center py-3 bg-slate-50 rounded-xl">尚無開通名單</div>`;
+    } else {
+        let html = '';
+        approvedList.forEach(email => {
+            html += `
+                <div class="flex items-center justify-between py-1 px-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                    <span class="font-mono text-slate-700 truncate pr-2">${email}</span>
+                    <button onclick="adminRemoveApprovedEmail('${email}')" class="text-rose-500 hover:text-rose-700 text-[11px] font-bold shrink-0">
+                        移除
+                    </button>
+                </div>
+            `;
+        });
+        approvedContainer.innerHTML = html;
+    }
+}
+
+async function adminApproveUser(uid, email) {
+    const updatedApproved = Array.from(new Set([...(authWhitelistData.approved || []), email.toLowerCase()]));
+    const updatedPending = { ...(authWhitelistData.pending || {}) };
+    delete updatedPending[uid];
+
+    try {
+        await setDoc(authDocRef, {
+            approved: updatedApproved,
+            pending: updatedPending
+        }, { merge: true });
+        renderAdminLists();
+        updateAdminBadge();
+    } catch (e) {
+        showCustomAlert("操作失敗", "更新審核名單失敗，請檢查網路連線。");
+    }
+}
+
+async function adminRejectUser(uid) {
+    const updatedPending = { ...(authWhitelistData.pending || {}) };
+    delete updatedPending[uid];
+
+    try {
+        await setDoc(authDocRef, {
+            pending: updatedPending
+        }, { merge: true });
+        renderAdminLists();
+        updateAdminBadge();
+    } catch (e) {
+        showCustomAlert("操作失敗", "操作失敗，請稍後再試。");
+    }
+}
+
+async function adminAddEmailDirectly() {
+    const input = document.getElementById('adminNewEmailInput');
+    const email = input.value.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+        showCustomAlert("輸入錯誤", "請輸入正確的電子郵件格式！");
+        return;
+    }
+
+    const updatedApproved = Array.from(new Set([...(authWhitelistData.approved || []), email]));
+    try {
+        await setDoc(authDocRef, { approved: updatedApproved }, { merge: true });
+        input.value = '';
+        renderAdminLists();
+    } catch (e) {
+        showCustomAlert("新增失敗", "無法將成員加入雲端名單。");
+    }
+}
+
+async function adminRemoveApprovedEmail(email) {
+    showCustomConfirm("移除權限？", `確定要取消 ${email} 的使用權限嗎？該成員將立即無法再瀏覽題庫。`, async () => {
+        const updatedApproved = (authWhitelistData.approved || []).filter(e => e.toLowerCase() !== email.toLowerCase());
+        try {
+            await setDoc(authDocRef, { approved: updatedApproved }, { merge: true });
+            renderAdminLists();
+        } catch (e) {
+            showCustomAlert("移除失敗", "無法更新名單。");
+        }
+    });
+}
+
+// ==========================================
+// 題庫主要邏輯
+// ==========================================
+function processData() {
+    dbList = rawDb.map(item => {
+        const uid = `${item.c}_${item.i}`;
+        let note = item.n || "";
+        
+        let effectiveAns = (customAnswers[uid] !== undefined && customAnswers[uid] !== "") ? customAnswers[uid] : item.a;
+        let isMulti = false;
+        if (item.t === '選擇' && effectiveAns) {
+            if (effectiveAns.includes(',') || effectiveAns.includes('，') || effectiveAns.length > 1) {
+                isMulti = true;
+            }
+        }
+
+        let processedOptions = item.o;
+        if (item.o) {
+            processedOptions = item.o.map((opt, idx) => {
+                const match = opt.match(/[\(（](.{2,})[\)）]$/);
+                if (match) {
+                    const content = match[1];
+                    const cleanOpt = opt.replace(match[0], "").trim();
+                    if (!note.includes(content)) {
+                        note += `${note ? '<br>' : ''}選項(${idx + 1})補充：${content}`;
+                    }
+                    return cleanOpt;
+                }
+                return opt;
+            });
+        }
+
+        return {
+            ...item,
+            uid: uid,
+            o: processedOptions,
+            n: note,
+            isMulti: isMulti
+        };
+    });
+}
+
+async function updateStats(syncPrivate = true) {
+    if (syncPrivate && userPrivateDocRef && currentUser) {
+        try {
+            await setDoc(userPrivateDocRef, {
+                wrongList: wrongList,
+                progressMap: progressMap,
+                currentPage: currentPage,
+                hidePendingAlert: hidePendingAlert,
+                userEmail: currentUser.email,
+                lastActiveAt: new Date().toISOString()
+            }, { merge: true });
+        } catch (err) {
+            console.error("同步個人作答進度失敗:", err);
+        }
+    }
+
+    const total = dbList.length;
+    let answeredCount = 0;
+    let correctCount = 0;
+    let pendingCount = 0;
+
+    dbList.forEach(q => {
+        const p = progressMap[q.uid];
+        if (p && p.answered) {
+            answeredCount++;
+            if (p.isCorrect) correctCount++;
+        }
+        const effectiveAns = (customAnswers[q.uid] !== undefined && customAnswers[q.uid] !== "") ? customAnswers[q.uid] : q.a;
+        if (!effectiveAns || effectiveAns.trim() === "") {
+            pendingCount++;
+        }
+    });
+
+    const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+    const progressPercent = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
+
+    document.getElementById('statTotal').innerText = total;
+    document.getElementById('statAnswered').innerText = answeredCount;
+    document.getElementById('statAccuracy').innerText = `${accuracy}%`;
+    document.getElementById('statWrong').innerText = wrongList.length;
+    document.getElementById('statPending').innerText = pendingCount;
+    document.getElementById('progressBar').style.width = `${progressPercent}%`;
+}
+
+function setMode(mode) {
+    currentMode = mode;
+    currentPage = 1;
+
+    ['btnModeAll', 'btnModeWrong', 'btnModePending', 'btnModeRandom'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.className = "px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition";
+    });
+
+    if (mode === 'all') {
+        document.getElementById('btnModeAll').className = "px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition";
+        currentList = [...dbList];
+    } else if (mode === 'wrong') {
+        document.getElementById('btnModeWrong').className = "px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-amber-500 text-white shadow-sm hover:bg-amber-600 transition";
+        currentList = dbList.filter(q => wrongList.includes(q.uid));
+    } else if (mode === 'pending') {
+        document.getElementById('btnModePending').className = "px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-rose-600 text-white shadow-sm hover:bg-rose-700 transition";
+        currentList = dbList.filter(q => {
+            const ans = (customAnswers[q.uid] !== undefined && customAnswers[q.uid] !== "") ? customAnswers[q.uid] : q.a;
+            return !ans || ans.trim() === "";
+        });
+    } else if (mode === 'random') {
+        document.getElementById('btnModeRandom').className = "px-2 sm:px-3 py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-purple-600 text-white shadow-sm hover:bg-purple-700 transition";
+        currentList = [...dbList].sort(() => Math.random() - 0.5).slice(0, 50);
+    }
+
+    renderPage(true);
+}
+
+function renderPage(scrollToTop = false) {
+    const container = document.getElementById('question-list');
+    container.innerHTML = '';
+
+    if (currentList.length === 0) {
+        document.getElementById('paginationArea').style.display = 'none';
+        container.innerHTML = `
+            <div class="text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400">
+                <div class="text-4xl mb-2">📭</div>
+                <div class="text-base font-semibold">此模式下目前沒有題目</div>
+            </div>`;
+        return;
+    }
+
+    const totalPages = Math.ceil(currentList.length / ITEMS_PER_PAGE);
+    if (currentPage > totalPages) currentPage = 1;
+
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const end = Math.min(start + ITEMS_PER_PAGE, currentList.length);
+    const pageItems = currentList.slice(start, end);
+
+    pageItems.forEach(item => {
+        const card = createQuestionCard(item);
+        container.appendChild(card);
+    });
+
+    updatePaginationControls(totalPages);
+    if (scrollToTop) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function createQuestionCard(item) {
+    const uid = item.uid;
+    const effectiveAns = (customAnswers[uid] !== undefined && customAnswers[uid] !== "") ? customAnswers[uid] : item.a;
+    const isPending = !effectiveAns || effectiveAns.trim() === "";
+    const isStarred = wrongList.includes(uid);
+    const isMulti = item.isMulti;
+
+    const card = document.createElement('div');
+    card.id = `card-${uid}`;
+    card.className = `q-card ${isPending ? 'pending' : (item.c === '運轉' ? 'yun' : 'che')}`;
+
+    const categoryBadge = item.c === '運轉' ? 'bg-sky-500' : 'bg-purple-600';
+    const typeBadge = isMulti ? 'bg-orange-500' : (item.t === '是非' ? 'bg-teal-600' : 'bg-slate-600');
+
+    let html = `
+        <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-2.5">
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span class="text-xs text-white font-bold px-2 py-0.5 rounded ${categoryBadge}">${item.c}</span>
+                <span class="text-xs text-white font-bold px-2 py-0.5 rounded ${typeBadge}">${isMulti ? '選擇 (複選)' : item.t}</span>
+                <span class="text-xs font-bold text-slate-700">題號 ${item.i}</span>
+                <span class="text-[11px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">#${uid}</span>
+                ${isPending ? '<span class="text-xs font-bold bg-rose-100 text-rose-600 px-2 py-0.5 rounded border border-rose-200">❓ 答案待查證</span>' : ''}
+                ${customAnswers[uid] ? '<span class="text-[11px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">自訂正解</span>' : ''}
+            </div>
+            <div class="star-btn ${isStarred ? 'active' : ''}" onclick="toggleStar('${uid}')" title="加入/取消收藏">
+                ${isStarred ? '★' : '☆'}
+            </div>
+        </div>
+        <div class="text-base sm:text-lg font-semibold text-slate-800 leading-relaxed mb-4 text-justify">
+            ${item.q}
+            ${isMulti ? '<span class="text-rose-600 text-sm font-normal ml-1">(本題為複選)</span>' : ''}
+        </div>
+        <div class="grid gap-2.5 mb-4">
+    `;
+
+    const savedProgress = progressMap[uid];
+    const isAnswered = savedProgress && savedProgress.answered;
+
+    if (item.t === '是非') {
+        const opts = ['O', 'X'];
+        opts.forEach(opt => {
+            let btnClass = 'opt-btn';
+            let mark = '';
+            if (isAnswered) {
+                if (opt === effectiveAns) {
+                    btnClass += ' correct';
+                    mark = '⭕';
+                } else if (savedProgress.userPick === opt && !savedProgress.isCorrect) {
+                    btnClass += ' wrong';
+                    mark = '❌';
+                }
+            }
+            html += `
+                <div class="${btnClass}" onclick="handleSingleAnswer('${uid}', '${opt}')">
+                    <span><b>${opt}</b></span>
+                    <span>${mark}</span>
+                </div>`;
+        });
+    } else if (!isMulti) {
+        item.o.forEach((opt, idx) => {
+            const optVal = (idx + 1).toString();
+            let btnClass = 'opt-btn';
+            let mark = '';
+            if (isAnswered) {
+                if (optVal === effectiveAns) {
+                    btnClass += ' correct';
+                    mark = '⭕';
+                } else if (savedProgress.userPick === optVal && !savedProgress.isCorrect) {
+                    btnClass += ' wrong';
+                    mark = '❌';
+                }
+            }
+            html += `
+                <div class="${btnClass}" onclick="handleSingleAnswer('${uid}', '${optVal}')">
+                    <span><b class="mr-2">(${optVal})</b> ${opt}</span>
+                    <span>${mark}</span>
+                </div>`;
+        });
+    } else {
+        if (!multiSelectState[uid]) {
+            multiSelectState[uid] = new Set(isAnswered && Array.isArray(savedProgress.userPick) ? savedProgress.userPick : []);
+        }
+        const currentSelected = multiSelectState[uid];
+        const correctArray = effectiveAns ? effectiveAns.split(/[,，]/).map(s => s.trim()) : [];
+
+        item.o.forEach((opt, idx) => {
+            const optVal = (idx + 1).toString();
+            const isChecked = currentSelected.has(optVal);
+            let btnClass = `opt-btn ${isChecked ? 'selected' : ''}`;
+            let mark = '';
+
+            if (isAnswered) {
+                if (correctArray.includes(optVal)) {
+                    btnClass += ' correct';
+                    mark = '⭕ 正解';
+                } else if (isChecked && !correctArray.includes(optVal)) {
+                    btnClass += ' wrong';
+                    mark = '❌ 誤選';
+                }
+            }
+
+            html += `
+                <div class="${btnClass}" onclick="toggleMultiOption('${uid}', '${optVal}')">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" ${isChecked ? 'checked' : ''} class="w-4 h-4 pointer-events-none text-blue-600 rounded">
+                        <span><b class="mr-1">(${optVal})</b> ${opt}</span>
+                    </div>
+                    <span class="text-xs font-bold">${mark}</span>
+                </div>`;
+        });
+
+        if (!isAnswered) {
+            html += `
+                <button class="mt-2 w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-sm transition" onclick="submitMultiAnswer('${uid}')">
+                    確認送出複選答案
+                </button>`;
+        }
+    }
+
+    html += `</div>`;
+
+    const userNote = customNotes[uid] || "";
+    const meta = noteMeta[uid];
+    const editorTag = meta ? `<span class="text-[11px] text-slate-400 font-normal">（最後由 ${meta.author} 於 ${meta.time} 更新）</span>` : "";
+
+    const noteText = item.n || (item.t === '是非' ? (effectiveAns === 'O' ? '本題敘述正確。' : (effectiveAns === 'X' ? '本題敘述錯誤。' : '答案待查證')) : (effectiveAns ? `答案為 (${effectiveAns})` : '答案待查證'));
+
+    html += `
+        <div id="note-box-${uid}" class="mt-3 p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-slate-700 text-sm ${isAnswered ? 'block' : 'hidden'}">
+            <div class="flex justify-between items-start gap-2 mb-1.5">
+                <span class="font-bold text-amber-800 flex items-center gap-1">💡 答案解析：</span>
+                <button class="text-xs bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 px-2 py-1 rounded font-semibold transition shadow-xs" onclick="openEditorModal('${uid}')">
+                    ✏️ 編輯正解/筆記
+                </button>
+            </div>
+            <div class="text-slate-700 leading-relaxed mb-2">${noteText}</div>
+            ${userNote ? `
+                <div class="mt-2 pt-2 border-t border-amber-200/80 bg-white/70 p-2.5 rounded-lg">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-bold text-indigo-700">📝 雲端同步筆記：</span>
+                        ${editorTag}
+                    </div>
+                    <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">${userNote}</div>
+                </div>` : ''}
+        </div>
+    `;
+
+    card.innerHTML = html;
+    return card;
+}
+
+function handleSingleAnswer(uid, chosen) {
+    const item = dbList.find(q => q.uid === uid);
+    if (!item) return;
+
+    const effectiveAns = (customAnswers[uid] !== undefined && customAnswers[uid] !== "") ? customAnswers[uid] : item.a;
+
+    if (!effectiveAns || effectiveAns.trim() === "") {
+        const noteBox = document.getElementById(`note-box-${uid}`);
+        if (noteBox) {
+            noteBox.classList.remove('hidden');
+            noteBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        if (!hidePendingAlert) {
+            showCustomAlertWithCheckbox(
+                "提示：本題答案待查證",
+                "這題目前題庫尚未提供標準答案！系統已為您在下方展開「答案解析」，您可以查閱規章後點擊「✏️ 編輯正解/筆記」直接將答案與筆記存入系統，所有人手機將即時同步！",
+                (checked) => {
+                    if (checked) {
+                        hidePendingAlert = true;
+                        updateStats(true);
+                    }
+                }
+            );
+        }
+        return;
+    }
+
+    const isCorrect = (chosen.trim().toUpperCase() === effectiveAns.trim().toUpperCase());
+
+    progressMap[uid] = {
+        answered: true,
+        isCorrect: isCorrect,
+        userPick: chosen
+    };
+
+    if (!isCorrect && !wrongList.includes(uid)) {
+        wrongList.push(uid);
+    }
+
+    updateStats(true);
+    refreshCardUI(uid);
+}
+
+function toggleMultiOption(uid, optVal) {
+    if (progressMap[uid]?.answered) return;
+
+    if (!multiSelectState[uid]) {
+        multiSelectState[uid] = new Set();
+    }
+    const currentSelected = multiSelectState[uid];
+    if (currentSelected.has(optVal)) {
+        currentSelected.delete(optVal);
+    } else {
+        currentSelected.add(optVal);
+    }
+    refreshCardUI(uid);
+}
+
+function submitMultiAnswer(uid) {
+    const item = dbList.find(q => q.uid === uid);
+    if (!item) return;
+
+    const effectiveAns = (customAnswers[uid] !== undefined && customAnswers[uid] !== "") ? customAnswers[uid] : item.a;
+
+    if (!effectiveAns || effectiveAns.trim() === "") {
+        const noteBox = document.getElementById(`note-box-${uid}`);
+        if (noteBox) {
+            noteBox.classList.remove('hidden');
+            noteBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        if (!hidePendingAlert) {
+            showCustomAlertWithCheckbox(
+                "提示：本題答案待查證",
+                "本複選題尚未設定標準正解，系統已展開下方「答案解析」，您可以點選「✏️ 編輯正解/筆記」設定答案。",
+                (checked) => {
+                    if (checked) {
+                        hidePendingAlert = true;
+                        updateStats(true);
+                    }
+                }
+            );
+        }
+        return;
+    }
+
+    const currentSelected = Array.from(multiSelectState[uid] || []).sort();
+    if (currentSelected.length === 0) {
+        showCustomAlert("作答提醒", "請至少勾選一個選項後再送出答案！");
+        return;
+    }
+
+    const correctArray = effectiveAns.split(/[,，]/).map(s => s.trim()).filter(Boolean).sort();
+    const isCorrect = (JSON.stringify(currentSelected) === JSON.stringify(correctArray));
+
+    progressMap[uid] = {
+        answered: true,
+        isCorrect: isCorrect,
+        userPick: currentSelected
+    };
+
+    if (!isCorrect && !wrongList.includes(uid)) {
+        wrongList.push(uid);
+    }
+
+    updateStats(true);
+    refreshCardUI(uid);
+}
+
+function toggleStar(uid) {
+    if (wrongList.includes(uid)) {
+        wrongList = wrongList.filter(x => x !== uid);
+        if (currentMode === 'wrong') {
+            currentList = currentList.filter(q => q.uid !== uid);
+            renderPage(false);
+            updateStats(true);
+            return;
+        }
+    } else {
+        wrongList.push(uid);
+    }
+    updateStats(true);
+    refreshCardUI(uid);
+}
+
+function refreshCardUI(uid) {
+    const item = dbList.find(q => q.uid === uid);
+    const oldCard = document.getElementById(`card-${uid}`);
+    if (item && oldCard) {
+        const newCard = createQuestionCard(item);
+        oldCard.replaceWith(newCard);
+    }
+}
+
+function updatePaginationControls(totalPages) {
+    const area = document.getElementById('paginationArea');
+    if (totalPages > 1) {
+        area.style.display = 'flex';
+        document.getElementById('pageInfo').innerText = `${currentPage} / ${totalPages}`;
+        document.getElementById('btnPrev').disabled = (currentPage === 1);
+        document.getElementById('btnNext').disabled = (currentPage === totalPages);
+    } else {
+        area.style.display = 'none';
+    }
+}
+
+function changePage(delta) {
+    const totalPages = Math.ceil(currentList.length / ITEMS_PER_PAGE);
+    const newPage = currentPage + delta;
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        renderPage(true);
+        updateStats(true);
+    }
+}
+
+function searchByNumber() {
+    const cat = document.getElementById('searchCategory').value;
+    const id = parseInt(document.getElementById('searchId').value);
+    if (!id) {
+        showCustomAlert("請輸入題號", "請在輸入框輸入要查詢的數字題號！");
+        return;
+    }
+
+    const uid = `${cat}_${id}`;
+    const index = dbList.findIndex(q => q.uid === uid);
+
+    if (index !== -1) {
+        if (currentMode !== 'all') {
+            setMode('all');
+        }
+        currentPage = Math.ceil((index + 1) / ITEMS_PER_PAGE);
+        renderPage();
+
+        setTimeout(() => {
+            const el = document.getElementById(`card-${uid}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('highlight');
+                setTimeout(() => el.classList.remove('highlight'), 2000);
+            }
+        }, 150);
+    } else {
+        showCustomAlert("找不到題目", `在「${cat}」類別中找不到第 ${id} 題。`);
+    }
+}
+
+function searchByKeyword() {
+    const kw = document.getElementById('searchKeyword').value.trim();
+    if (!kw) {
+        showCustomAlert("請輸入關鍵字", "請輸入欲搜尋的題目內容文字。");
+        return;
+    }
+
+    searchMatches = [];
+    currentList.forEach((q, idx) => {
+        const customN = customNotes[q.uid] || "";
+        if (q.q.includes(kw) || q.n.includes(kw) || customN.includes(kw)) {
+            searchMatches.push(idx);
+        }
+    });
+
+    if (searchMatches.length === 0) {
+        document.getElementById('searchStatus').innerText = "查無符合題目";
+        showCustomAlert("搜尋無結果", `在當前清單中未找到包含「${kw}」的題目。`);
+        return;
+    }
+
+    currentSearchMatchIndex = 0;
+    jumpToSearchResult();
+}
+
+function navMatch(dir) {
+    if (searchMatches.length === 0) return;
+    currentSearchMatchIndex += dir;
+    if (currentSearchMatchIndex >= searchMatches.length) currentSearchMatchIndex = 0;
+    if (currentSearchMatchIndex < 0) currentSearchMatchIndex = searchMatches.length - 1;
+    jumpToSearchResult();
+}
+
+function jumpToSearchResult() {
+    const matchIdx = searchMatches[currentSearchMatchIndex];
+    document.getElementById('searchStatus').innerText = `搜尋符合：${currentSearchMatchIndex + 1} / ${searchMatches.length}`;
+
+    const targetPage = Math.ceil((matchIdx + 1) / ITEMS_PER_PAGE);
+    if (currentPage !== targetPage) {
+        currentPage = targetPage;
+        renderPage();
+    }
+
+    setTimeout(() => {
+        const item = currentList[matchIdx];
+        const el = document.getElementById(`card-${item.uid}`);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('highlight');
+            setTimeout(() => el.classList.remove('highlight'), 1800);
+        }
+    }, 150);
+}
+
+function openEditorModal(uid) {
+    currentEditingUid = uid;
+    const item = dbList.find(q => q.uid === uid);
+    if (!item) return;
+
+    document.getElementById('editorQuestionInfo').innerText = `[${item.c} - ${item.t}] 題號: ${item.i} (識別碼: #${uid})`;
+    document.getElementById('editorQuestionText').innerText = item.q;
+
+    const effectiveAns = (customAnswers[uid] !== undefined) ? customAnswers[uid] : item.a;
+    document.getElementById('editorAnswerInput').value = effectiveAns;
+    document.getElementById('editorNoteInput').value = customNotes[uid] || "";
+
+    document.getElementById('modalEditor').classList.remove('hidden');
+}
+
+function closeEditorModal() {
+    document.getElementById('modalEditor').classList.add('hidden');
+    currentEditingUid = null;
+}
+
+async function saveCustomDetails() {
+    if (!currentEditingUid) return;
+    const uid = currentEditingUid;
+    const ansVal = document.getElementById('editorAnswerInput').value.trim();
+    const noteVal = document.getElementById('editorNoteInput').value.trim();
+
+    if (ansVal) {
+        customAnswers[uid] = ansVal;
+    } else {
+        delete customAnswers[uid];
+    }
+
+    if (noteVal) {
+        customNotes[uid] = noteVal;
+        const now = new Date();
+        const timeStr = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        noteMeta[uid] = {
+            author: currentUser ? (currentUser.displayName || currentUser.email.split('@')[0]) : "未知成員",
+            time: timeStr
+        };
+    } else {
+        delete customNotes[uid];
+        delete noteMeta[uid];
+    }
+
+    delete progressMap[uid];
+    if (multiSelectState[uid]) {
+        delete multiSelectState[uid];
+    }
+
+    closeEditorModal();
+    processData();
+    updateStats(true);
+    refreshCardUI(uid);
+
+    // 同步推播至 Firebase
+    if (publicCollabDocRef && currentUser) {
+        try {
+            updateCloudStatus('syncing', '正在推播至雲端...');
+            await setDoc(publicCollabDocRef, {
+                customAnswers: customAnswers,
+                customNotes: customNotes,
+                noteMeta: noteMeta,
+                lastUpdatedBy: currentUser.displayName || currentUser.email,
+                lastUpdatedAt: new Date().toISOString()
+            }, { merge: true });
+            updateCloudStatus('online', '雲端同步即時連線');
+        } catch (e) {
+            console.error("雲端推播失敗:", e);
+            updateCloudStatus('offline', '推播失敗，請檢查權限');
+        }
+    }
+
+    showCustomAlert("儲存成功", "已成功更新正解與筆記！雲端已即時推播，其他同學的畫面將同步更新。");
+}
+
+function resetCurrentPage() {
+    showCustomConfirm("重置本頁作答？", "確定要重置「目前這一頁」的作答紀錄嗎？\n(只會清除目前頁面的作答紅綠燈狀態，收藏的星星不會消失)", () => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        const end = Math.min(start + ITEMS_PER_PAGE, currentList.length);
+        const pageItems = currentList.slice(start, end);
+
+        pageItems.forEach(item => {
+            delete progressMap[item.uid];
+            delete multiSelectState[item.uid];
+        });
+
+        updateStats(true);
+        renderPage();
+    });
+}
+
+function clearAllData() {
+    showCustomConfirm("⚠️ 警告：清除所有紀錄", "此動作將會清除個人的做題紀錄、錯題收藏與進度！(此動作無法復原)\n確定要重設嗎？", () => {
+        wrongList = [];
+        progressMap = {};
+        currentPage = 1;
+
+        updateStats(true);
+        setMode('all');
+        showCustomAlert("已清除", "個人作答紀錄已成功清空。");
+    });
+}
+
+function showCustomAlert(title, message) {
+    document.getElementById('modalAlertTitle').innerText = title;
+    document.getElementById('modalAlertMessage').innerText = message;
+    document.getElementById('modalAlertCheckboxContainer').classList.add('hidden');
+    document.getElementById('modalAlert').classList.remove('hidden');
+    alertCallback = null;
+}
+
+function showCustomAlertWithCheckbox(title, message, onConfirmWithCheck) {
+    document.getElementById('modalAlertTitle').innerText = title;
+    document.getElementById('modalAlertMessage').innerText = message;
+    document.getElementById('modalAlertCheckbox').checked = false;
+    document.getElementById('modalAlertCheckboxContainer').classList.remove('hidden');
+    document.getElementById('modalAlert').classList.remove('hidden');
+    alertCallback = onConfirmWithCheck;
+}
+
+function toggleAlertCheckbox() {
+    const cb = document.getElementById('modalAlertCheckbox');
+    cb.checked = !cb.checked;
+}
+
+function closeAlertModal() {
+    const isChecked = document.getElementById('modalAlertCheckbox').checked;
+    document.getElementById('modalAlert').classList.add('hidden');
+    if (alertCallback) {
+        alertCallback(isChecked);
+        alertCallback = null;
+    }
+}
+
+function showCustomConfirm(title, message, onConfirm) {
+    const modal = document.getElementById('modalConfirm');
+    document.getElementById('modalConfirmTitle').innerText = title;
+    document.getElementById('modalConfirmMessage').innerText = message;
+    modal.classList.remove('hidden');
+
+    const okBtn = document.getElementById('modalConfirmOk');
+    const cancelBtn = document.getElementById('modalConfirmCancel');
+
+    const cleanup = () => {
+        modal.classList.add('hidden');
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+    };
+
+    okBtn.onclick = () => {
+        cleanup();
+        if (onConfirm) onConfirm();
+    };
+    cancelBtn.onclick = () => cleanup();
+}
+
+// 綁定全域函式供 HTML 行內事件使用
+Object.assign(window, {
+    loginWithGoogle,
+    checkApprovalStatus,
+    confirmLogout,
+    openAdminModal,
+    closeAdminModal,
+    adminApproveUser,
+    adminRejectUser,
+    adminAddEmailDirectly,
+    adminRemoveApprovedEmail,
+    searchByNumber,
+    searchByKeyword,
+    navMatch,
+    setMode,
+    resetCurrentPage,
+    clearAllData,
+    openEditorModal,
+    closeEditorModal,
+    saveCustomDetails,
+    toggleAlertCheckbox,
+    closeAlertModal,
+    changePage,
+    handleSingleAnswer,
+    toggleMultiOption,
+    submitMultiAnswer,
+    toggleStar
+});
+
+window.onload = function() {
+    processData();
+    setMode('all');
+};
+</script>
+</body>
+</html>
