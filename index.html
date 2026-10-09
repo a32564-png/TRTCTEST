@@ -25,7 +25,6 @@
             padding-bottom: 120px;
             overflow-x: hidden;
         }
-        /* 卡片邊線與過渡 */
         .q-card {
             background: #ffffff;
             border-radius: 14px;
@@ -46,7 +45,6 @@
             background-color: #fef3c7;
             animation: flash 1.6s ease-in-out;
         }
-        /* 選項按鈕樣式 */
         .opt-btn {
             background: #ffffff;
             border: 2px solid #e2e8f0;
@@ -96,13 +94,11 @@
             color: var(--star);
             transform: scale(1.15);
         }
-        /* 動畫 */
         @keyframes flash {
             0% { background-color: #fef08a; transform: scale(1.01); }
             50% { background-color: #fef9c3; }
             100% { background-color: #ffffff; transform: scale(1); }
         }
-        /* FAB 回頂端 */
         .fab {
             position: fixed;
             bottom: 85px;
@@ -129,8 +125,10 @@
 </head>
 <body class="p-2.5 sm:p-5">
 
-<!-- 1. Google 登入視窗 (未登入時顯示) -->
-<div id="loginScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+<!-- ========================================== -->
+<!-- 1. Google 登入視窗 (未登入時全螢幕鎖定) -->
+<!-- ========================================== -->
+<div id="loginScreen" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-8 shadow-2xl text-center border border-slate-100">
         <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
             🚇
@@ -143,7 +141,7 @@
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.49 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
             </svg>
             <span>使用 Google 帳號登入</span>
         </button>
@@ -152,19 +150,22 @@
     </div>
 </div>
 
-<!-- 2. 等候審核提示視窗 (已登入但尚未被管理員核准時顯示) -->
-<div id="pendingScreen" class="fixed inset-0 bg-slate-900/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+<!-- ========================================== -->
+<!-- 2. 等候審核提示視窗 (已登入但未獲核准時 100% 鎖死) -->
+<!-- ========================================== -->
+<div id="pendingScreen" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-8 shadow-2xl text-center border border-slate-100">
         <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 border border-amber-200 shadow-inner">
             ⏳
         </div>
-        <h2 class="text-lg font-bold text-slate-800 mb-1">已送出使用申請</h2>
+        <h2 class="text-lg font-bold text-slate-800 mb-1">使用權限審核中</h2>
         <div class="text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200 my-4 text-left leading-relaxed">
             <div><b>申請帳號：</b><span id="pendingUserEmail" class="font-mono text-slate-700"></span></div>
-            <div><b>使用者：</b><span id="pendingUserName" class="text-slate-700"></span></div>
+            <div><b>申請人：</b><span id="pendingUserName" class="text-slate-700"></span></div>
         </div>
         <p class="text-xs text-slate-600 mb-6 leading-relaxed">
-            系統已將您的申請通知管理員！<br>請聯絡讀書會主辦人於線上點選「核准」，核准後點擊下方按鈕即可進入。
+            系統已記錄您的使用申請！<br>
+            請聯絡管理員 (<span class="font-mono font-bold text-blue-600">a32564@gmail.com</span>) 於線上核准，核准後點擊下方按鈕即可開通。
         </p>
 
         <div class="space-y-2">
@@ -178,7 +179,9 @@
     </div>
 </div>
 
+<!-- ========================================== -->
 <!-- 3. 管理員專屬：成員權限審核視窗 -->
+<!-- ========================================== -->
 <div id="modalAdmin" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-100 max-h-[85vh] flex flex-col">
         <div class="flex justify-between items-center border-b pb-3 mb-3">
@@ -213,7 +216,7 @@
                 </div>
             </div>
 
-            <!-- 已核准成員名單 -->
+            <!-- 已核准成員名單 (隨時可點「移除」封鎖) -->
             <div class="pt-3 border-t">
                 <span class="block text-xs font-bold text-slate-700 mb-2">✔️ 已開通名單 (<span id="approvedCountBadge">0</span>)</span>
                 <div id="adminApprovedList" class="space-y-1.5 text-xs max-h-48 overflow-y-auto">
@@ -228,7 +231,10 @@
     </div>
 </div>
 
-<div class="max-w-4xl mx-auto">
+<!-- ========================================== -->
+<!-- 4. 題庫核心系統 (未獲核准前預設 hidden 絕對不顯示) -->
+<!-- ========================================== -->
+<div id="mainApp" class="hidden max-w-4xl mx-auto">
     <!-- 搜尋與導航區塊 -->
     <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm mb-4 border border-slate-200">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
@@ -260,9 +266,9 @@
             <h1 class="text-base sm:text-xl font-bold text-slate-800 flex items-center gap-2">
                 <span>🚇</span> 115年捷運高運量 升遷考題庫
             </h1>
-            <!-- 使用者身分、管理員按鈕與連線狀態指示 -->
+            
             <div class="flex items-center gap-2 flex-wrap">
-                <!-- 管理員審核按鈕 (僅限管理員顯示) -->
+                <!-- 管理員審核按鈕 (僅限 a32564@gmail.com 才會顯示) -->
                 <button id="adminTriggerBtn" class="hidden items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 py-1 rounded-full shadow-sm transition" onclick="openAdminModal()">
                     <span>👑</span>
                     <span>成員審核</span>
@@ -271,11 +277,11 @@
 
                 <span id="cloudStatus" class="text-xs bg-amber-100 text-amber-800 font-semibold px-2.5 py-1 rounded-full border border-amber-200 flex items-center gap-1.5 transition-colors">
                     <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                    <span id="cloudStatusText">檢查登入狀態...</span>
+                    <span id="cloudStatusText">連線中...</span>
                 </span>
                 
-                <!-- 登入使用者標籤 (點擊可登出) -->
-                <div id="userProfileChip" class="hidden items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs px-2.5 py-1 rounded-full cursor-pointer transition" onclick="confirmLogout()" title="點擊登出此 Google 帳號">
+                <!-- 登入使用者標籤 -->
+                <div id="userProfileChip" class="hidden items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs px-2.5 py-1 rounded-full cursor-pointer transition" onclick="confirmLogout()" title="點擊登出">
                     <span id="userDisplayName" class="font-bold"></span>
                     <span class="text-slate-400">|</span>
                     <span class="text-rose-500 font-semibold">登出</span>
@@ -353,7 +359,7 @@
 <!-- 浮動回頂端按鈕 -->
 <div class="fab" onclick="window.scrollTo({top:0, behavior:'smooth'})" title="回頂端">⬆</div>
 
-<!-- 自訂通用確認彈窗 -->
+<!-- 通用確認彈窗 -->
 <div id="modalConfirm" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100">
         <h3 id="modalConfirmTitle" class="text-base font-bold text-slate-800 mb-2">確認操作</h3>
@@ -365,14 +371,13 @@
     </div>
 </div>
 
-<!-- 自訂通用訊息彈窗 -->
+<!-- 通用訊息提示彈窗 -->
 <div id="modalAlert" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100 text-center">
         <div id="modalAlertIcon" class="text-3xl mb-2">💡</div>
         <h3 id="modalAlertTitle" class="text-base font-bold text-slate-800 mb-2">提示</h3>
         <p id="modalAlertMessage" class="text-sm text-slate-600 mb-4 leading-relaxed whitespace-pre-line"></p>
         
-        <!-- 待查證題目可勾選不再顯示彈窗 -->
         <div id="modalAlertCheckboxContainer" class="hidden text-left mb-4 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center gap-2 cursor-pointer" onclick="toggleAlertCheckbox()">
             <input type="checkbox" id="modalAlertCheckbox" class="w-4 h-4 text-blue-600 rounded pointer-events-none">
             <label class="cursor-pointer select-none">我知道了，不再彈窗提示（之後點擊直接展開解析）</label>
@@ -416,9 +421,11 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+console.log("🚇 捷運題庫系統 v3.0 嚴格權限鎖定版已載入");
+
 // ==========================================
 // 👑 最高管理員 (Admin) 信箱設定區
-// 你的 Gmail 已內建，擁有線上審核核准與踢除成員的最高權限
+// 系統嚴格只認這個 Gmail，其他帳號絕對無法開啟審核面板！
 // ==========================================
 const ADMIN_EMAILS = [
     "a32564@gmail.com"
@@ -463,13 +470,13 @@ let noteMeta = {};
 let currentPage = 1;
 let hidePendingAlert = false;
 
-// 授權名單狀態 (儲存於 Firebase: collab_exam/auth_whitelist)
+// 授權名單狀態
 let authWhitelistData = {
     approved: [],
     pending: {}
 };
 
-let currentMode = 'all'; // 'all' | 'wrong' | 'pending' | 'random'
+let currentMode = 'all';
 const ITEMS_PER_PAGE = 50;
 
 const multiSelectState = {};
@@ -479,7 +486,7 @@ let currentSearchMatchIndex = 0;
 let currentEditingUid = null;
 let alertCallback = null;
 
-// Firebase 使用者與文檔參考
+// Firebase 使用者與參考
 let currentUser = null;
 let isUserAdmin = false;
 let publicCollabDocRef = null;
@@ -507,25 +514,23 @@ function updateCloudStatus(status, text) {
 onAuthStateChanged(auth, async (user) => {
     const loginScreen = document.getElementById('loginScreen');
     const pendingScreen = document.getElementById('pendingScreen');
-    const errorMsg = document.getElementById('loginErrorMsg');
+    const mainApp = document.getElementById('mainApp');
     const profileChip = document.getElementById('userProfileChip');
     const displayNameEl = document.getElementById('userDisplayName');
     const adminTriggerBtn = document.getElementById('adminTriggerBtn');
 
     if (user) {
         currentUser = user;
-        const userEmail = (user.email || "").toLowerCase();
-        
-        loginScreen.classList.add('hidden');
-        errorMsg.innerText = "";
+        const userEmail = (user.email || "").trim().toLowerCase();
 
         // 綁定路徑
         authDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'collab_exam', 'auth_whitelist');
         publicCollabDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'collab_exam', 'master');
         userPrivateDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'user_data', 'progress');
 
-        // 判斷是否為管理員
-        isUserAdmin = ADMIN_EMAILS.length === 0 || ADMIN_EMAILS.map(e => e.toLowerCase()).includes(userEmail);
+        // 嚴格判定管理員（絕不寬鬆放行）
+        const adminSet = new Set(ADMIN_EMAILS.map(e => e.trim().toLowerCase()));
+        isUserAdmin = adminSet.has(userEmail);
 
         // 即時監聽授權名單
         onSnapshot(authDocRef, async (snap) => {
@@ -533,34 +538,42 @@ onAuthStateChanged(auth, async (user) => {
                 authWhitelistData = snap.data();
             } else {
                 authWhitelistData = { approved: [], pending: {} };
-                // 初始化名單文件
                 try {
                     await setDoc(authDocRef, authWhitelistData, { merge: true });
                 } catch(e) {}
             }
 
-            const approvedList = (authWhitelistData.approved || []).map(e => e.toLowerCase());
+            const approvedList = (authWhitelistData.approved || []).map(e => (e || "").trim().toLowerCase());
             const isApproved = isUserAdmin || approvedList.includes(userEmail);
 
             if (isApproved) {
-                // 已核准放行
+                // 通過審核：放行進入題庫
+                loginScreen.classList.add('hidden');
                 pendingScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden'); // 解開題庫底層
+
                 displayNameEl.innerText = `👤 ${user.displayName || user.email.split('@')[0]}`;
                 profileChip.classList.remove('hidden');
+                profileChip.classList.add('flex');
 
+                // 只有 a32564@gmail.com 才會顯示審核按鈕
                 if (isUserAdmin) {
                     adminTriggerBtn.classList.remove('hidden');
                     adminTriggerBtn.classList.add('flex');
                     updateAdminBadge();
                 } else {
+                    adminTriggerBtn.classList.remove('flex');
                     adminTriggerBtn.classList.add('hidden');
                 }
 
                 initExamSystem();
             } else {
-                // 尚未核准：送出審核請求並顯示 pendingScreen
+                // 尚未授權：絕對鎖死，不載入題目
+                mainApp.classList.add('hidden');
+                loginScreen.classList.add('hidden');
                 profileChip.classList.add('hidden');
                 adminTriggerBtn.classList.add('hidden');
+
                 document.getElementById('pendingUserEmail').innerText = user.email;
                 document.getElementById('pendingUserName').innerText = user.displayName || "同學";
                 pendingScreen.classList.remove('hidden');
@@ -588,6 +601,7 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         currentUser = null;
         isUserAdmin = false;
+        mainApp.classList.add('hidden');
         loginScreen.classList.remove('hidden');
         pendingScreen.classList.add('hidden');
         profileChip.classList.add('hidden');
@@ -649,10 +663,11 @@ function checkApprovalStatus() {
         getDoc(authDocRef).then((snap) => {
             if (snap.exists()) {
                 authWhitelistData = snap.data();
-                const userEmail = (currentUser?.email || "").toLowerCase();
-                const approvedList = (authWhitelistData.approved || []).map(e => e.toLowerCase());
+                const userEmail = (currentUser?.email || "").trim().toLowerCase();
+                const approvedList = (authWhitelistData.approved || []).map(e => (e || "").trim().toLowerCase());
                 if (approvedList.includes(userEmail)) {
                     document.getElementById('pendingScreen').classList.add('hidden');
+                    document.getElementById('mainApp').classList.remove('hidden');
                     initExamSystem();
                 } else {
                     showCustomAlert("審核中", "管理員尚未開通您的帳號，請稍後再試或通知主辦人！");
@@ -727,7 +742,7 @@ function renderAdminLists() {
         pendingContainer.innerHTML = html;
     }
 
-    // 渲染已開通名單
+    // 渲染已開通名單 (有「移除」按鈕，隨時可封鎖)
     const approvedContainer = document.getElementById('adminApprovedList');
     if (approvedList.length === 0) {
         approvedContainer.innerHTML = `<div class="text-slate-400 text-center py-3 bg-slate-50 rounded-xl">尚無開通名單</div>`;
@@ -1404,7 +1419,6 @@ async function saveCustomDetails() {
     updateStats(true);
     refreshCardUI(uid);
 
-    // 同步推播至 Firebase
     if (publicCollabDocRef && currentUser) {
         try {
             updateCloudStatus('syncing', '正在推播至雲端...');
@@ -1534,11 +1548,6 @@ Object.assign(window, {
     submitMultiAnswer,
     toggleStar
 });
-
-window.onload = function() {
-    processData();
-    setMode('all');
-};
 </script>
 </body>
 </html>
