@@ -40,6 +40,7 @@
         }
         .q-card.yun { border-left-color: #0284c7; }
         .q-card.che { border-left-color: #7c3aed; }
+        .q-card.pic { border-left-color: #ea580c; }
         .q-card.pending { border-left-color: #f59e0b; }
         .q-card.highlight {
             background-color: #fef3c7;
@@ -244,6 +245,7 @@
                 <select id="searchCategory" class="px-2 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm bg-white outline-none shrink-0">
                     <option value="運轉">運轉</option>
                     <option value="車務">車務</option>
+                    <option value="車務_圖片">車務 (圖片題)</option>
                 </select>
                 <input type="number" id="searchId" class="flex-1 min-w-0 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm outline-none" placeholder="輸入題號 (如 12)">
                 <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition shrink-0" onclick="searchByNumber()">跳轉</button>
@@ -251,7 +253,7 @@
             <!-- 關鍵字搜尋 -->
             <div class="flex items-center gap-1.5 sm:gap-2 w-full">
                 <span class="text-xs font-bold text-slate-500 whitespace-nowrap shrink-0">關鍵字</span>
-                <input type="text" id="searchKeyword" class="flex-1 min-w-0 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm outline-none" placeholder="搜尋內容 (如: 毒化物)">
+                <input type="text" id="searchKeyword" class="flex-1 min-w-0 px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs sm:text-sm outline-none" placeholder="搜尋內容 (如: 防水隔艙)">
                 <button class="bg-slate-600 hover:bg-slate-700 text-white w-8 h-8 rounded-lg text-xs font-bold transition flex items-center justify-center shrink-0" onclick="navMatch(-1)">＜</button>
                 <button class="bg-slate-600 hover:bg-slate-700 text-white w-8 h-8 rounded-lg text-xs font-bold transition flex items-center justify-center shrink-0" onclick="navMatch(1)">＞</button>
                 <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition shrink-0" onclick="searchByKeyword()">搜尋</button>
@@ -359,6 +361,13 @@
 <!-- 浮動回頂端按鈕 -->
 <div class="fab" onclick="window.scrollTo({top:0, behavior:'smooth'})" title="回頂端">⬆</div>
 
+<!-- 圖片全螢幕放大檢視彈窗 (Lightbox) -->
+<div id="modalImageZoom" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-3 cursor-zoom-out" onclick="closeImageModal()">
+    <div class="absolute top-4 right-4 text-white text-3xl font-bold bg-white/20 hover:bg-white/30 rounded-full w-10 h-10 flex items-center justify-center transition">✕</div>
+    <img id="modalZoomImg" class="max-h-[85vh] max-w-[95vw] rounded-2xl object-contain shadow-2xl transition-transform duration-200" src="" alt="放大圖片">
+    <div class="text-xs text-slate-300 mt-3 font-medium bg-slate-900/60 px-4 py-1.5 rounded-full backdrop-blur-xs">點擊任意處關閉放大檢視</div>
+</div>
+
 <!-- 通用確認彈窗 -->
 <div id="modalConfirm" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100">
@@ -421,11 +430,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-console.log("🚇 捷運題庫系統 v3.0 嚴格權限鎖定版已載入");
+console.log("🚇 捷運題庫系統 v3.1 圖片題與完整題庫版已載入");
 
 // ==========================================
 // 👑 最高管理員 (Admin) 信箱設定區
-// 系統嚴格只認這個 Gmail，其他帳號絕對無法開啟審核面板！
 // ==========================================
 const ADMIN_EMAILS = [
     "a32564@gmail.com"
@@ -449,14 +457,60 @@ const provider = new GoogleAuthProvider();
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'trtctest';
 
 // ==========================================
-// 題庫資料區 (後續拿到題目後，整批貼在方括號 [] 內)
+// 題庫資料區 (含36題圖片題、車務最新題目與運轉題目)
 // ==========================================
 const rawDb = [
-    { i: 1, c: "運轉", t: "是非", q: "車站遭受毒化物侵襲，受影響車站採取疏散作業，若月台上有停靠列車應儘速駛離，於地下車站毒化物可能經由隧道擴散到相鄰車站，故其鄰站應同步進行疏散作業。", a: "O", n: "法規標準處理原則。" },
-    { i: 2, c: "運轉", t: "是非", q: "半高式月台門車站主控制面盤（MCP）具有開關單一自動滑門之按鈕，而就地控制面盤（LCP）則無此功能。", a: "", n: "" },
-    { i: 40, c: "運轉", t: "選擇", q: "人員下軌道作業時應確實穿著反光背心、安全鞋等防護具，且人員及機具應隨時與第3軌保持多少公分以上距離?", a: "3", o: ["40公分", "50公分", "60公分", "70公分"], n: "安全防護距離應隨時保持60公分以上。" },
-    { i: 61, c: "運轉", t: "選擇", q: "下列對通訊系統之敘述何者為非？(複選題示範)", a: "2, 4", o: ["發生營運異常時，行控中心應利用旅客資訊顯示器顯示相關訊息", "員工對子母鐘之時間有疑問時，應向通訊維修人員確認", "使用通訊設備傳送訊息時應以中文為原則", "現行高運量捷運系統之無線電系統為類比式"], n: "選項(2)應向行控中心確認；選項(4)現行高運量捷運無線電為數位式。" },
-    { i: 70, c: "車務", t: "選擇", q: "215次車以CM開至善導寺停妥後，欲離站時發生零速繼電器（ZVR）異常，EB-B燈亮，列車無法移動。下列何者是屬於第二項條件？", a: "", o: ["主蓄風缸壓力充足", "先啟動EB-LOOP BYPASS", "重置時Dead-Man要啟動操縱桿成90度", "電力煞車先隔離"], n: "" }
+    // ------------------------------------------
+    // 📷 車務類 - 圖片題庫 (1-36題)
+    // ------------------------------------------
+    { i: 1, c: "車務", sub: "圖片", t: "選擇", q: "右圖是高運量軌道之防水隔艙閘門，下列相關敘述何者錯誤？", img: "./images/che_img_1.jpg", a: "1", o: ["蘆洲線東門站與忠孝新生站間有裝設", "南港線南港站與昆陽站間有裝設", "蘆洲線蘆洲機廠隧道入口有裝設", "信義線安和站西側有裝設"], n: "東門站至忠孝新生站屬新莊線，且東門無蘆洲線。" },
+    { i: 2, c: "車務", sub: "圖片", t: "選擇", q: "右圖是高運量軌道之防水隔艙閘門，下列相關敘述何者錯誤？", img: "./images/che_img_2.jpg", a: "3", o: ["操作模式可分「CCR閘門總監控系統」、「PAO遠端遙控系統」及「現場控制盤」進行啟閉操作", "防水隔艙閘門旁有二組水位偵測感應器，任1組偵測到水位異常上升，就會傳送警訊給行控中心及詢問處", "二組水位偵測感應器皆偵測到水位異常上升，將會立即自動將防水隔艙閘門關閉", "防水隔艙閘門若未於全開鎖定之狀態(Fully Opened and Locked)時，道旁號誌將停止發送閘門附近軌道之速度碼"], n: "感應到水位上升會發送警訊，但不會自動關閉閘門，需經綜合確認後手動操作。" },
+    { i: 3, c: "車務", sub: "圖片", t: "選擇", q: "右圖是高運量軌道之浮動式道床，下列相關敘述何者錯誤？", img: "./images/che_img_3.jpg", a: "2", o: ["用來減低軌道穿越學校或醫院地下之震動噪音", "目前高運量已通車路線除淡水線為高架及平面段未鋪設外，其餘各地下段皆有鋪設", "其減震原理係利用道床前後、左右及下部之支承墊吸收震動以減低噪音", "支承墊有橡膠支承墊及金屬彈簧支承墊二種"], n: "並非所有地下段皆鋪設浮動式道床，僅在穿越對振動音敏感的特定區段(如學校、醫院、文教區)鋪設。" },
+    { i: 4, c: "車務", sub: "圖片", t: "選擇", q: "右圖是高運量電聯車之緊急開門旋鈕，下列相關敘述何者錯誤？", img: "./images/che_img_4.jpg", a: "3", o: ["左邊旋鈕向右旋可開啟單1車門", "右邊按鈕按下可開啟該側4個車門", "左邊旋鈕右旋後不必復歸，可由駕駛室列車車門控制面板之按鈕控制該車門之開或關", "右邊按鈕按下後不必復歸，可由駕駛室列車車門控制面板之按鈕控制該側車門之開或關"], n: "左邊旋鈕右旋開啟單門後，必須在現場手動復歸，駕駛室方能重新控制開關門。" },
+    { i: 5, c: "車務", sub: "圖片", t: "選擇", q: "右圖是高運量371型電聯車DM1車廂之BX設備箱內的面盤，當列車發生主控制器鑰匙無法KEY OFF，行控會指示你去拔CILR繼電器，哪一編號才是CILR繼電器？", img: "./images/che_img_5.jpg", a: "3", o: ["1", "2", "3", "4"], n: "編號3為 CILR (Controller Interlock Relay) 繼電器位置。" },
+    { i: 6, c: "車務", sub: "圖片", t: "選擇", q: "右圖是中和新蘆線月台門，有關說明，下列敘述何者錯誤？", img: "./images/che_img_6.jpg", a: "4", o: ["屬於全罩式月台門", "當月台門發生供電異常，由電池組提供電力可讓一邊月台在30分鐘內操作滑門開啟/關閉五次", "每個滑門組均配有就地隔離開關，安裝在門柱上，就地隔離開關上有二種模式可以選擇-即「自動」模式、「旁路」模式", "任一滑門、緊急門、或是司機員門被開啟時，該組滑門開啟指示燈會亮起"], n: "任一滑門、緊急門被開啟時，相關指示燈有特定對應規則，而非該組滑門開啟燈皆亮。" },
+    { i: 7, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之月台門狀態顯示指示燈，有關說明，下列敘述何者錯誤？", img: "./images/che_img_7.jpg", a: "4", o: ["在所有月台門已關閉並鎖定確認後，綠色燈號會亮起", "在頭端牆或尾端牆手動控制盤上，操作月台門「解除聯鎖」功能時，橘(黃)色顯示燈會亮起", "任何一具滑門、緊急門、或司機員門在發生「無法關閉」或「門被開啟」警示時，紅色顯示燈會閃爍", "橘(黃)燈或紅燈亮皆會造成列車失去速度碼"], n: "解除聯鎖時橘(黃)燈亮起，即是為了旁路月台門訊號，允許列車取得速度碼離站。" },
+    { i: 8, c: "車務", sub: "圖片", t: "選擇", q: "高運量列車以CM駕駛進入月台門車站，抵達右圖參考點位置時，速限控制為多少公里以下？", img: "./images/che_img_8.jpg", a: "2", o: ["50", "40", "25", "15"], n: "CM駕駛進站抵達第一參考點時速限應控制在 40 公里以下。" },
+    { i: 9, c: "車務", sub: "圖片", t: "選擇", q: "高運量列車以CM駕駛進入月台門車站，抵達右圖參考點位置時，距 BERTH 點尚有多少公尺？", img: "./images/che_img_9.jpg", a: "3", o: ["50", "40", "25", "15"], n: "該參考點距停準點 (BERTH) 尚有約 25 公尺。" },
+    { i: 10, c: "車務", sub: "圖片", t: "選擇", q: "高運量列車以CM駕駛進入月台門車站，抵達右圖參考點標誌，其意義為何？", img: "./images/che_img_10.jpg", a: "3", o: ["速限50公里", "速限5公里", "提示列車即將停妥", "越位1個車門"], n: "該標誌為即將停妥定位之參考標線圈指示。" },
+    { i: 11, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量301型電聯車駕駛室後向面板，要關閉車廂照明，僅剩緊急照明，您該操作哪一個按鈕？", img: "./images/che_img_11.jpg", a: "1", o: ["2", "3", "4", "5"], n: "操作編號1按鈕可切換為緊急照明。" },
+    { i: 12, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之301型電聯車側向面板，最右上角的按鈕(3)為何按鈕？", img: "./images/che_img_12.jpg", a: "2", o: ["解聯按鈕", "駐車煞車按鈕", "推進系統復歸按鈕", "閃光燈按鈕"], n: "右上角紅色按鈕為駐車煞車按鈕 (Parking Brake)。" },
+    { i: 13, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之301型電聯車之側向面板，當列車發生煞車故障，EB-B燈亮，行控中心指示您啟動EB-Loop Bypass，您該操作哪一個開關？", img: "./images/che_img_13.jpg", a: "2", o: ["1", "2", "3", "4"], n: "編號2為 EB-Loop Bypass 鉛封開關。" },
+    { i: 14, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之321型電聯車側向面板，當車門發生異常，卡住異物而無法關閉，造成列車無法前進，行控中心指示您啟動Door-Override鉛封開關配合CM模式開車，您該啟用哪一個開關？", img: "./images/che_img_14.jpg", a: "3", o: ["5", "6", "7", "8"], n: "編號7為 Door-Override 鉛封開關。" },
+    { i: 15, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之321型電聯車側向面板，2號按鈕是什麼？", img: "./images/che_img_15.jpg", a: "4", o: ["頭燈旁路", "解聯按鈕", "緊急煞車旁路", "駐車煞車"], n: "編號2為駐車煞車按鈕。" },
+    { i: 16, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之321型電聯車背向面板，相當於301型電聯車Door Off ATO開關的是哪一個開關？", img: "./images/che_img_16.jpg", a: "4", o: ["2", "3", "4", "5"], n: "編號5相當於 301 型之 Door Off ATO 開關。" },
+    { i: 17, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之321型電聯車後向面板，當列車發生異常，若行控中心指示您隔離電力煞車時，您該操作哪一個按鈕？", img: "./images/che_img_17.jpg", a: "3", o: ["2", "3", "4", "5"], n: "操作編號3按鈕可隔離電力煞車 (Dynamic Brake Cutout)。" },
+    { i: 18, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之371型電聯車側向面板，當列車撞到障礙物觸動絆腳閥並卡住時，行控中心指示你啟動某一鉛封開關以作故障排除，你該啟用哪一個？", img: "./images/che_img_18.jpg", a: "2", o: ["3", "4", "5", "6"], n: "編號4為 Trip Cock Cut Out (絆腳閥隔離) 鉛封開關。" },
+    { i: 19, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量371型電聯車側向面板，當行進間車門發生異常，門打開狀態燈亮，造成列車無法前進，行控中心指示你啟動Door-Override鉛封開關配合CM模式開車，你該啟用哪一個？", img: "./images/che_img_19.jpg", a: "4", o: ["5", "6", "7", "8"], n: "編號8為 Door-Override 鉛封開關。" },
+    { i: 20, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之371型電聯車後向面板，左下角箭頭所指的為何鉛封開關？", img: "./images/che_img_20.jpg", a: "2", o: ["ATC 電源開關", "ATP-BYPASS", "DOOR OFF ATO", "DOOR OPEN ATO"], n: "箭頭所指為 ATP-BYPASS 鉛封開關。" },
+    { i: 21, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之371型電聯車後向面板，箭頭所指的斷路器(右起第7個)若跳脫(OFF)會造成列車控制迴路訊號無法傳遞，列車完全無法移動，它是什麼斷路器？", img: "./images/che_img_21.jpg", a: "1", o: ["TLCB", "DCCB", "RDCB", "AXCB"], n: "該斷路器為 TLCB (Train Line Circuit Breaker)。" },
+    { i: 22, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量月台門的控制面板，英文簡稱為？", img: "./images/che_img_22.jpg", a: "2", o: ["MCCP", "MCP", "RCCP", "PISC"], n: "月台門主控制面盤簡稱為 MCP (Master Control Panel)。" },
+    { i: 23, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量月台門控制面板，當旅客上下車完畢而月台門無法關閉時，行控中心指示你將控制面板轉為手動模式，再按下關門按鈕，所以你需操作哪2個開關及按鈕？", img: "./images/che_img_23.jpg", a: "3", o: ["1 & 3", "2 & 4", "3 & 4", "3 & 5"], n: "需操作模式選擇開關 (3) 與關門按鈕 (4)。" },
+    { i: 24, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量月台門控制面板，圖中某一開關能解除月台門與道旁號誌之聯鎖，將鑰匙轉為旁通持續3秒，即可讓列車收到速度碼離站，該開關編號？", img: "./images/che_img_24.jpg", a: "4", o: ["1", "2", "3", "4"], n: "編號4為旁通/解除聯鎖鑰匙開關。" },
+    { i: 25, c: "車務", sub: "圖片", t: "選擇", q: "對於右圖高運量道岔之敘述，下列何者錯誤？", img: "./images/che_img_25.jpg", a: "2", o: ["列車依箭頭方向過來，會擠軌", "尖軌未定位，造成軌距變寬", "列車依箭頭方向過來，會出軌", "轉轍器狀態顯示器會顯示上紅下不亮"], n: "尖軌未密貼定位並不會造成基本軌距變寬，但會引發擠軌或脫軌風險。" },
+    { i: 26, c: "車務", sub: "圖片", t: "選擇", q: "對於右圖高運量機廠之電動絆腳桿操作顯示桿之敘述，下列何者錯誤？", img: "./images/che_img_26.jpg", a: "3", o: ["裝設於各機廠的轉換軌", "需按下按鈕讓絆腳桿降下才可通過", "降下後紅燈會變綠燈", "改W/C模式限速5公里通過"], n: "絆腳桿完全降下後紅燈係熄滅或轉亮白燈，並非變綠燈。" },
+    { i: 27, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量電聯車之調車控制器，其中的模式選擇開關、動力PWR、前進或後退選擇開關、鑰匙開關、解聯按鈕、Dead-Man、同步線路開關，依序的號碼為", img: "./images/che_img_27.jpg", a: "2", o: ["1234567", "3564271", "4736721", "1764523"], n: "調車控制器各開關配置標準代號順序為 3564271。" },
+    { i: 28, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量之371型電聯車車廂內之設備，該設備為何？", img: "./images/che_img_28.jpg", a: "1", o: ["偵煙器", "CCTV鏡頭", "緊急照明", "空氣濾清器"], n: "車頂圓盤狀外觀設備為車廂偵煙器 (Smoke Detector)。" },
+    { i: 29, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量軌道之「警衝標」，其作用為在二合一之軌道上行駛時，若需臨時停車，車頭不可超過此標誌，以避免發生什麼狀況？", img: "./images/che_img_29.jpg", a: "3", o: ["出軌", "擠軌", "側撞", "跨電"], n: "警衝標係設於道岔分歧處，停車超越標誌將侵入鄰線淨空導致側撞。" },
+    { i: 30, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量電聯車車門機構，下列敘述何者正確？", img: "./images/che_img_30.jpg", a: "2", o: ["裝設於301、321、371型電聯車", "按下2顆小電磁閥可開門", "按下左邊小電磁閥可開門", "按下右邊小電磁閥可關門"], n: "氣動門閥體需同時推動雙電磁閥方可執行開門動作。" },
+    { i: 31, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量電聯車車下設備，對該設備之敘述，下列何者為誤？", img: "./images/che_img_31.jpg", a: "4", o: ["該設備屬於SIV系統", "該設備為閘刀開關", "導通380 V AC電源", "導通750V DC電源"], n: "此為 SIV 輸出轉換閘刀開關，導通者為 380V AC 輔助交流電，非 750V DC。" },
+    { i: 32, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量301型電聯車駕駛室之後向面板斷路器，車輛處從LCB斷路器分出一個新設置的LDCB斷路器，該LDCB斷路器在哪一位置？", img: "./images/che_img_32.jpg", a: "2", o: ["1", "2", "3", "4"], n: "新設之 LDCB (Local Door Circuit Breaker) 位於編號 2 位置。" },
+    { i: 33, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量301車型後向面板斷路器，其上有一新設置的LDCB斷路器，若該斷路器跳脫(OFF)，下列之現象，何者為誤？", img: "./images/che_img_33.jpg", a: "3", o: ["該EMU的DM1車廂門不接受控制，無法開或關", "該EMU的DM1車廂門不論開或關，門開指示燈為熄滅狀態", "列車行進中若LDCB跳脫(OFF)，列車會EB", "LDCB跳脫後，該EMU駕駛室「門打開狀態燈」將會恆亮"], n: "LDCB 跳脫不會觸發緊急煞車 EB，但會造成車門失去控制與狀態指示異常。" },
+    { i: 34, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量電聯車駕駛室之背向面板之開關，有關虛線圓圈內之開關，下列敘述何者為正確？", img: "./images/che_img_34.jpg", a: "3", o: ["ATO-BYPASS開關", "ATP-BYPASS開關", "RBCTD-BYPASS開關", "只有301型列車有裝"], n: "虛線圓圈內為加裝之 RBCTD-BYPASS 鉛封旁路開關。" },
+    { i: 35, c: "車務", sub: "圖片", t: "選擇", q: "右圖為高運量電聯車駕駛室背向面板之開關，虛線圓圈內之開關為何？", img: "./images/che_img_35.jpg", a: "2", o: ["頭燈旁路開關", "EB-LOOP BYPASS開關", "DOOR-OVERRIDE開關", "TRIP-COCK BYPASS開關"], n: "該位置之鉛封開關為 EB-LOOP BYPASS 開關。" },
+    { i: 36, c: "車務", sub: "圖片", t: "選擇", q: "因應信義線月台門原始設計與其他月台門系統不同之處，下列何者正確？", img: "./images/che_img_36.jpg", a: "2", o: ["滑門無法關閉時，可以操作「月台門關閉或解除聯鎖」指示燈，使所有滑門關閉", "於發生單一滑門未開啟或全部滑門正常開啟但無法連動關閉等異常狀況，此時若將MCP 手動控制盤操作模式由《OFF關》切換至《ON開》時，會導致所有滑門立即關閉", "大安森林公園站111滑門與164滑門大小分別為165cm與180cm", "可顯示單一滑門狀態也可操作單一滑門"], n: "信義線半高式月台門手動面盤切換特性：由 OFF 切換至 ON 時會使滑門立即全關。" },
+
+    // ------------------------------------------
+    // 📖 車務類 - 最新增訂題目 (第 241-248 題)
+    // ------------------------------------------
+    { i: 241, c: "車務", t: "是非", q: "晨間巡軌列車或其他已上主線列車因故迴送機廠，期間車門曾開啟，須比照營運時段於終端站執行清車後再迴送機廠。", a: "O", n: "安全防護規定：只要營運前車門曾開啟，皆須比照清車作業徹底巡檢車廂以防旅客誤入。" },
+    { i: 242, c: "車務", t: "是非", q: "關閉高運量電聯車設備箱蓋板後，可施以拍打蓋板，並確認上下鎖頭的鎖孔定位線均已對齊，確認鎖固完成。", a: "O", n: "設備箱關閉標準程序：施以拍打確認密合，並指差確認鎖頭定位線對齊。" },
+    { i: 243, c: "車務", t: "選擇", q: "機廠進行低壓切換時，塔台調度員發現「各系統別低壓電力切換失去電源而會產生之例行警訊告警」所列以外的故障告警，正確處置為何？", a: "3", o: ["視為正常現象，不必處理", "自行判斷原因後再決定是否通報", "立即向維修單位通報確認，並回報車場值班主管及行控中心", "等切換作業全部結束後再填寫紀錄"], n: "超出例行切換告警清單之異常警訊，應立即向維修單位通報確認，並回報主管與OCC。" },
+    { i: 244, c: "車務", t: "選擇", q: "低壓電力轉供完成後，軌道電路佔據訊號經過多久仍未消失時須立即報修？", a: "2", o: ["30秒", "1分鐘", "3分鐘", "5分鐘"], n: "轉供後軌道電路佔據訊號超過 1 分鐘未復原即屬設備異常，須立即報修。" },
+    { i: 245, c: "車務", t: "選擇", q: "平面段列車巡軌或行駛時，行車專員判斷路樹是否侵入軌道區的正確方式為何？", a: "2", o: ["只看列車側面", "目視軌道正前方，高架平面區段可參考隔音牆或圍籬界線", "完全依靠旅客通報", "僅在列車停車後檢查"], n: "目視正前方動態包絡線，並以隔音牆、防護圍籬作為安全界線參考依據。" },
+    { i: 246, c: "車務", t: "選擇", q: "已啟用月台門間隙紅外線感測器的車站，靠站列車發現月台門頭、尾端警示紅閃燈啟動時，應如何處理？", a: "2", o: ["立即發車", "回報暫停出發並查看CCTV確認間隙狀況", "廣播通知旅客後出發", "改以手動駕駛離站"], n: "感測器紅閃燈亮起代表間隙可能有人物夾留，應暫停出發、調閱CCTV確認並回報。" },
+    { i: 247, c: "車務", t: "選擇", q: "淡水信義線、板南線及中和新蘆線非重疊區段，列車發生越位狀況，下列何者正確？", a: "4", o: ["尖峰時段越位1節車廂內執行退行", "離峰時段越位2節車廂內執行退行", "行控中心可視路線班距、運轉特性，在兼顧旅客服務原則下彈性調度應變", "以上皆是"], n: "現行規章規定：尖峰1節車廂、離峰2節車廂內得退行，行控得視現場彈性調度。" },
+    { i: 248, c: "車務", t: "選擇", q: "速度碼25的CM模式下，321及341型列車的超速預警在實際車速多少時作動？", a: "3", o: ["每小時20公里", "每小時21公里", "每小時23公里", "每小時25公里"], n: "CM 25 模式下，當車速達 23 km/h 時即會啟動超速預警警音提醒。" }
 ];
 
 // 系統核心狀態變數
@@ -528,7 +582,7 @@ onAuthStateChanged(auth, async (user) => {
         publicCollabDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'collab_exam', 'master');
         userPrivateDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'user_data', 'progress');
 
-        // 嚴格判定管理員（絕不寬鬆放行）
+        // 嚴格判定管理員（只認 a32564@gmail.com）
         const adminSet = new Set(ADMIN_EMAILS.map(e => e.trim().toLowerCase()));
         isUserAdmin = adminSet.has(userEmail);
 
@@ -550,13 +604,12 @@ onAuthStateChanged(auth, async (user) => {
                 // 通過審核：放行進入題庫
                 loginScreen.classList.add('hidden');
                 pendingScreen.classList.add('hidden');
-                mainApp.classList.remove('hidden'); // 解開題庫底層
+                mainApp.classList.remove('hidden');
 
                 displayNameEl.innerText = `👤 ${user.displayName || user.email.split('@')[0]}`;
                 profileChip.classList.remove('hidden');
                 profileChip.classList.add('flex');
 
-                // 只有 a32564@gmail.com 才會顯示審核按鈕
                 if (isUserAdmin) {
                     adminTriggerBtn.classList.remove('hidden');
                     adminTriggerBtn.classList.add('flex');
@@ -568,7 +621,7 @@ onAuthStateChanged(auth, async (user) => {
 
                 initExamSystem();
             } else {
-                // 尚未授權：絕對鎖死，不載入題目
+                // 尚未授權：鎖定畫面
                 mainApp.classList.add('hidden');
                 loginScreen.classList.add('hidden');
                 profileChip.classList.add('hidden');
@@ -578,7 +631,6 @@ onAuthStateChanged(auth, async (user) => {
                 document.getElementById('pendingUserName').innerText = user.displayName || "同學";
                 pendingScreen.classList.remove('hidden');
 
-                // 自動將自己登記至待審核清單中
                 if (!authWhitelistData.pending || !authWhitelistData.pending[user.uid]) {
                     const now = new Date();
                     const timeStr = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -615,7 +667,6 @@ async function initExamSystem() {
     if (isSystemInitialized) return;
     isSystemInitialized = true;
 
-    // 載入個人作答進度
     try {
         const privateSnap = await getDoc(userPrivateDocRef);
         if (privateSnap.exists()) {
@@ -629,7 +680,6 @@ async function initExamSystem() {
         console.warn("載入個人進度失敗:", e);
     }
 
-    // 即時監聽公共題庫正解與筆記
     onSnapshot(publicCollabDocRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
@@ -683,9 +733,6 @@ function confirmLogout() {
     });
 }
 
-// ==========================================
-// 👑 管理員審核與名單控制模組
-// ==========================================
 function updateAdminBadge() {
     const pendingList = Object.entries(authWhitelistData.pending || {});
     const count = pendingList.length;
@@ -714,7 +761,6 @@ function renderAdminLists() {
     document.getElementById('pendingCountBadge').innerText = pendingEntries.length;
     document.getElementById('approvedCountBadge').innerText = approvedList.length;
 
-    // 渲染待審核清單
     const pendingContainer = document.getElementById('adminPendingList');
     if (pendingEntries.length === 0) {
         pendingContainer.innerHTML = `<div class="text-slate-400 text-center py-4 bg-slate-50 rounded-xl">目前沒有待審核的成員申請</div>`;
@@ -742,7 +788,6 @@ function renderAdminLists() {
         pendingContainer.innerHTML = html;
     }
 
-    // 渲染已開通名單 (有「移除」按鈕，隨時可封鎖)
     const approvedContainer = document.getElementById('adminApprovedList');
     if (approvedList.length === 0) {
         approvedContainer.innerHTML = `<div class="text-slate-400 text-center py-3 bg-slate-50 rounded-xl">尚無開通名單</div>`;
@@ -829,7 +874,7 @@ async function adminRemoveApprovedEmail(email) {
 // ==========================================
 function processData() {
     dbList = rawDb.map(item => {
-        const uid = `${item.c}_${item.i}`;
+        const uid = item.uid || `${item.c}_${item.sub ? item.sub + '_' : ''}${item.i}`;
         let note = item.n || "";
         
         let effectiveAns = (customAnswers[uid] !== undefined && customAnswers[uid] !== "") ? customAnswers[uid] : item.a;
@@ -980,15 +1025,25 @@ function createQuestionCard(item) {
 
     const card = document.createElement('div');
     card.id = `card-${uid}`;
-    card.className = `q-card ${isPending ? 'pending' : (item.c === '運轉' ? 'yun' : 'che')}`;
+    
+    let borderClass = 'che';
+    if (isPending) borderClass = 'pending';
+    else if (item.sub === '圖片') borderClass = 'pic';
+    else if (item.c === '運轉') borderClass = 'yun';
 
-    const categoryBadge = item.c === '運轉' ? 'bg-sky-500' : 'bg-purple-600';
+    card.className = `q-card ${borderClass}`;
+
+    let categoryBadge = 'bg-purple-600';
+    if (item.sub === '圖片') categoryBadge = 'bg-orange-600';
+    else if (item.c === '運轉') categoryBadge = 'bg-sky-500';
+
+    const categoryText = item.sub === '圖片' ? `${item.c} (圖片題)` : item.c;
     const typeBadge = isMulti ? 'bg-orange-500' : (item.t === '是非' ? 'bg-teal-600' : 'bg-slate-600');
 
     let html = `
         <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-2.5">
             <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <span class="text-xs text-white font-bold px-2 py-0.5 rounded ${categoryBadge}">${item.c}</span>
+                <span class="text-xs text-white font-bold px-2 py-0.5 rounded ${categoryBadge}">${categoryText}</span>
                 <span class="text-xs text-white font-bold px-2 py-0.5 rounded ${typeBadge}">${isMulti ? '選擇 (複選)' : item.t}</span>
                 <span class="text-xs font-bold text-slate-700">題號 ${item.i}</span>
                 <span class="text-[11px] font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200">#${uid}</span>
@@ -999,12 +1054,23 @@ function createQuestionCard(item) {
                 ${isStarred ? '★' : '☆'}
             </div>
         </div>
-        <div class="text-base sm:text-lg font-semibold text-slate-800 leading-relaxed mb-4 text-justify">
+        <div class="text-base sm:text-lg font-semibold text-slate-800 leading-relaxed mb-3 text-justify">
             ${item.q}
             ${isMulti ? '<span class="text-rose-600 text-sm font-normal ml-1">(本題為複選)</span>' : ''}
         </div>
-        <div class="grid gap-2.5 mb-4">
     `;
+
+    // 若有題目圖片，渲染圖片區塊與點擊全螢幕放大功能
+    if (item.img) {
+        html += `
+            <div class="my-3 text-center">
+                <img src="${item.img}" alt="題目圖片" class="max-h-60 sm:max-h-80 mx-auto rounded-xl border border-slate-200 shadow-sm cursor-zoom-in hover:opacity-90 transition object-contain bg-slate-50" onclick="zoomImage('${item.img}')" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-3 bg-slate-100 border border-dashed border-slate-300 rounded-xl text-xs text-slate-500 font-mono flex items-center justify-center gap-2\\'><span>📷</span><span>尚未上傳圖片檔：${item.img}</span></div>'">
+                <div class="text-[11px] text-slate-400 mt-1">（點擊圖片可全螢幕放大檢視）</div>
+            </div>
+        `;
+    }
+
+    html += `<div class="grid gap-2.5 mb-4">`;
 
     const savedProgress = progressMap[uid];
     const isAnswered = savedProgress && savedProgress.answered;
@@ -1120,6 +1186,17 @@ function createQuestionCard(item) {
 
     card.innerHTML = html;
     return card;
+}
+
+function zoomImage(src) {
+    const modal = document.getElementById('modalImageZoom');
+    const img = document.getElementById('modalZoomImg');
+    img.src = src;
+    modal.classList.remove('hidden');
+}
+
+function closeImageModal() {
+    document.getElementById('modalImageZoom').classList.add('hidden');
 }
 
 function handleSingleAnswer(uid, chosen) {
@@ -1287,8 +1364,17 @@ function searchByNumber() {
         return;
     }
 
-    const uid = `${cat}_${id}`;
-    const index = dbList.findIndex(q => q.uid === uid);
+    let uid = `${cat}_${id}`;
+    let index = dbList.findIndex(q => q.uid === uid);
+
+    if (index === -1) {
+        if (cat === "車務_圖片") {
+            uid = `車務_圖片_${id}`;
+            index = dbList.findIndex(q => q.uid === uid);
+        } else {
+            index = dbList.findIndex(q => q.c === cat && q.i === id && !q.sub);
+        }
+    }
 
     if (index !== -1) {
         if (currentMode !== 'all') {
@@ -1298,7 +1384,8 @@ function searchByNumber() {
         renderPage();
 
         setTimeout(() => {
-            const el = document.getElementById(`card-${uid}`);
+            const targetItem = dbList[index];
+            const el = document.getElementById(`card-${targetItem.uid}`);
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 el.classList.add('highlight');
@@ -1306,7 +1393,7 @@ function searchByNumber() {
             }
         }, 150);
     } else {
-        showCustomAlert("找不到題目", `在「${cat}」類別中找不到第 ${id} 題。`);
+        showCustomAlert("找不到題目", `在「${cat}」分類中找不到第 ${id} 題。`);
     }
 }
 
@@ -1369,7 +1456,8 @@ function openEditorModal(uid) {
     const item = dbList.find(q => q.uid === uid);
     if (!item) return;
 
-    document.getElementById('editorQuestionInfo').innerText = `[${item.c} - ${item.t}] 題號: ${item.i} (識別碼: #${uid})`;
+    const categoryText = item.sub === '圖片' ? `${item.c} (圖片題)` : item.c;
+    document.getElementById('editorQuestionInfo').innerText = `[${categoryText} - ${item.t}] 題號: ${item.i} (識別碼: #${uid})`;
     document.getElementById('editorQuestionText').innerText = item.q;
 
     const effectiveAns = (customAnswers[uid] !== undefined) ? customAnswers[uid] : item.a;
@@ -1546,7 +1634,9 @@ Object.assign(window, {
     handleSingleAnswer,
     toggleMultiOption,
     submitMultiAnswer,
-    toggleStar
+    toggleStar,
+    zoomImage,
+    closeImageModal
 });
 </script>
 </body>
